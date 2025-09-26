@@ -1282,9 +1282,21 @@
   };
 
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+       // Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Initialize App Check
+try {
+    const appCheck = firebase.appCheck(app);
+    appCheck.activate(
+        '6LcFYtYrAAAAAHM6IBWxWcsTAHYGeWuIjA_iSsLp', // <-- এখানে আপনার Site Key বসান
+        true
+    );
+    console.log('Firebase App Check activated successfully.');
+} catch (error) {
+    console.error('Error activating Firebase App Check:', error);
+}
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- CONFIGURATION ---
