@@ -1959,7 +1959,20 @@
             };
             
             const init = async () => {
-                try { 
+                // --- নতুন কোড শুরু ---
+try {
+    if (!firebase.auth().currentUser) {
+        console.log("No user logged in. Signing in anonymously...");
+        await firebase.auth().signInAnonymously();
+        console.log("Signed in anonymously successfully.");
+    }
+} catch (error) {
+    console.error("Anonymous sign-in failed:", error);
+    showNotification("Failed to connect to the server.", "error");
+    return; // লগইন ব্যর্থ হলে আর এগোনো যাবে না
+}
+
+              try { 
                     tg.ready();
                     tg.expand(); 
                     tg.enableClosingConfirmation(); 
