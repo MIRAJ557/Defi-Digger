@@ -1912,18 +1912,31 @@
                 }
             };
             
-            const registerReferral = async (referrerId) => {
+                    const registerReferral = async (referrerId) => {
+                console.log(`[Referral] Attempting to register referral for referrer: ${referrerId}`);
                 try {
+                    // প্রথমে আমরা চেক করব যে রেফারারের ডকুমেন্টটি আসলেই আছে কিনা
+                    const referrerDoc = await db.collection('users').doc(referrerId).get();
+
+                    if (!referrerDoc.exists) {
+                        console.error(`[Referral] Error: Referrer with ID ${referrerId} does not exist.`);
+                        return; // রেফারার না থাকলে কাজটি এখানেই শেষ
+                    }
+
+                    // রেফারারের referralCount বৃদ্ধি করা হচ্ছে
                     await db.collection('users').doc(referrerId).update({
                         referralCount: firebase.firestore.FieldValue.increment(1)
                     });
+                    console.log(`[Referral] Successfully incremented referral count for ${referrerId}`);
                     
+                    // নতুন ইউজারের state-এ referredBy তথ্য যোগ করা হচ্ছে
                     state.referredBy = referrerId;
-                    await saveUserData();
+                    await saveUserData(); // এবং ডাটাবেজে সেভ করা হচ্ছে
+                    console.log(`[Referral] Successfully set 'referredBy' for new user.`);
 
                     showNotification(`Welcome! You were invited by a friend.`, 'info');
                 } catch (error) {
-                    console.error("Error registering referral:", error);
+                    console.error("Error during referral registration process:", error);
                 }
             };
 
@@ -1958,46 +1971,56 @@
                 checkScroll();
             };
             
-            const init = async () => {
-                // --- নতুন কোড শুরু ---
-try {
-    if (!firebase.auth().currentUser) {
-        console.log("No user logged in. Signing in anonymously...");
-        await firebase.auth().signInAnonymously();
-        console.log("Signed in anonymously successfully.");
-    }
-} catch (error) {
-    console.error("Anonymous sign-in failed:", error);
-    showNotification("Failed to connect to the server.", "error");
-    return; // লগইন ব্যর্থ হলে আর এগোনো যাবে না
-}
-
-              try { 
+                      const init = async () => {
+                try {
                     tg.ready();
-                    tg.expand(); 
-                    tg.enableClosingConfirmation(); 
-                } catch (e) { 
-                    console.warn("Telegram script not found or failed. Running in browser mode."); 
+                    tg.expand();
+                } catch (e) {
+                    console.warn("Telegram script not found or failed. Running in browser mode.");
                 }
 
-                updateLoadingProgress(10, 'Initializing app...');
-                
-                await loadUserData();
+                updateLoadingProgress(10, 'Initializing...');
 
+                try {
+                    if (!firebase.auth().currentUser) {
+                        await firebase.auth().signInAnonymously();
+                    }
+                    console.log("Firebase Auth: Signed in with UID:", firebase.auth().currentUser.uid);
+                } catch (error) {
+                    console.error("Firebase Auth: Anonymous sign-in failed:", error);
+                    showNotification("Connection to server failed. Please restart.", "error");
+                    return; // সাইন-ইন ব্যর্থ হলে অ্যাপ আর এগোবে না
+                }
+
+                await loadUserData();
                 updateLoadingProgress(80, 'Setting up interface...');
+                
+                // --- রেফারেল লজিককে এখানে আনা হয়েছে ---
+                // নিশ্চিত করা হয়েছে যে ইউজার ডাটা লোড হওয়ার পরেই এটি রান হবে
+                const startParam = tg.initDataUnsafe?.start_param;
+                console.log(`[Referral] Found start_param: ${startParam}`);
+
+                if (startParam && startParam.startsWith('ref_')) {
+                    const referrerTgId = startParam.replace('ref_', '');
+                    const referrerId = `tg_${referrerTgId}`;
+                    
+                    console.log(`[Referral] Parsed referrer ID: ${referrerId}`);
+                    console.log(`[Referral] Current user ID: ${state.userId}`);
+                    console.log(`[Referral] Already referred by someone? -> ${state.referredBy}`);
+
+                    // কন্ডিশন চেক করা হচ্ছে
+                    if (referrerId && referrerId !== state.userId && !state.referredBy) {
+                        console.log("[Referral] Conditions met. Calling registerReferral function.");
+                        await registerReferral(referrerId);
+                    } else {
+                        console.log("[Referral] Conditions not met. Skipping referral registration.");
+                    }
+                }
+                // --- রেফারেল লজিক শেষ ---
 
                 const userIdForLink = state.userId.replace('tg_', '').replace('user_', '');
                 state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
                 dom.referralLinkTextElement.textContent = state.referralLink;
-
-                const startParam = tg.initDataUnsafe?.start_param;
-                if (startParam && startParam.startsWith('ref_')) {
-                    const referrerTgId = startParam.replace('ref_', '');
-                    const referrerId = `tg_${referrerTgId}`;
-                    if (referrerId && referrerId !== state.userId && !state.referredBy) {
-                        await registerReferral(referrerId);
-                    }
-                }
 
                 initializePackages();
                 updateUI();
@@ -2037,6 +2060,7 @@ try {
                     }
                 });
 
+        
                 // Hide loading screen and show main content
                 setTimeout(() => {
                     updateLoadingProgress(100, 'Ready!');
