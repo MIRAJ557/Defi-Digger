@@ -787,8 +787,13 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Initialize App Check
+// Initialize Firebase (এই অংশটি আপনার কোডে আগে থেকেই আছে)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// --- নতুন এবং সঠিক App Check কোড (v8 Compat Style) ---
 try {
-    const appCheck = firebase.appCheck(app);
+    const appCheck = firebase.appCheck(); // <--- কোনো app ভেরিয়েবল লাগবে না
     appCheck.activate(
         '6LcmZtYrAAAAANg5TqckGikiEYURbnBzs85wqHrj', // <-- এখানে আপনার Site Key বসান
         true
