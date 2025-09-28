@@ -770,22 +770,27 @@
     </div>
 
     <script>
-        // Firebase configuration - Use the same as your user app
-        const firebaseConfig = {
-            apiKey: "AIzaSyB57oI5BOktgge6UJSWsfiAytUY0YgXNSA",
-            authDomain: "defi-digger.firebaseapp.com",
-            projectId: "defi-digger",
-            storageBucket: "defi-digger.firebasestorage.app",
-            messagingSenderId: "194287488251",
-            appId: "1:194287488251:web:5a46a5825b95917859b45e",
-            measurementId: "G-RZ8TLE355C"
-        };
+    // Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB57oI5BOktgge6UJSWsfiAytUY0YgXNSA",
+  authDomain: "defi-digger.firebaseapp.com",
+  projectId: "defi-digger",
+  storageBucket: "defi-digger.firebasestorage.app",
+  messagingSenderId: "194287488251",
+  appId: "1:194287488251:web:5a46a5825b95917859b45e",
+  measurementId: "G-RZ8TLE355C"
+};
 
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth(); // Added auth initialization
+// Admin authentication configuration
+auth.useDeviceLanguage();
+
+// Set persistence to local to keep admin logged in
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
         // --- নতুন এবং সঠিক App Check কোড (v8 Compat Style) ---
         try {
@@ -992,26 +997,38 @@
             };
 
             // Handle login
-            const handleLogin = () => {
-                const email = dom.adminEmail.value;
-                const password = dom.adminPassword.value;
-                
-                dom.loginError.style.display = 'none';
+           
+const handleLogin = () => {
+    const email = dom.adminEmail.value;
+    const password = dom.adminPassword.value;
+    
+    dom.loginError.style.display = 'none';
 
-                auth.signInWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        // Signed in 
-                        currentUser = userCredential.user;
-                        showNotification('Login successful!', 'success');
-                        showAdminPanel();
-                        loadData();
-                    })
-                    .catch((error) => {
-                        dom.loginError.textContent = error.message;
-                        dom.loginError.style.display = 'block';
-                        showNotification('Login failed. Check credentials.', 'error');
-                    });
-            };
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            // Check if user is admin
+            const user = userCredential.user;
+            
+            // Simple admin check - you can enhance this with custom claims
+            if (email.includes('admin') || email === 'admin@coinswitch.com') {
+                currentUser = user;
+                showNotification('Admin login successful!', 'success');
+                showAdminPanel();
+                loadData();
+            } else {
+                // Not an admin, sign out
+                auth.signOut();
+                dom.loginError.textContent = 'Access denied. Admin only.';
+                dom.loginError.style.display = 'block';
+                showNotification('Admin access required', 'error');
+            }
+        })
+        .catch((error) => {
+            dom.loginError.textContent = error.message;
+            dom.loginError.style.display = 'block';
+            showNotification('Login failed. Check credentials.', 'error');
+        });
+};
 
             // Handle logout
             const handleLogout = () => {
