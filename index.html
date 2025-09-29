@@ -2002,119 +2002,122 @@
                 checkScroll();
             };
             
-                      const init = async () => {
-                try {
-                    tg.ready();
-                    tg.expand();
-                } catch (e) {
-                    console.warn("Telegram script not found or failed. Running in browser mode.");
-                }
-    // REFERRAL SYSTEM - FIXED
-    const StartParam = tg.initDataUnsafe?.start_param;
-    if (startParam && startParam.startsWith('ref_')) {
-        const referrerTgId = startParam.replace('ref_', '');
-        const referrerId = `tg_${referrerTgId}`;
-        console.log("REFERRAL: Found referrer -", referrerId);
-        setTimeout(() => registerReferral(referrerId), 1000);
-    }
-
+                 const init = async () => {
+    // ধাপ ১: ব্যবহারকারীকে লগইন করানো
     try {
         if (!firebase.auth().currentUser) {
+            console.log("No user logged in. Signing in anonymously...");
             await firebase.auth().signInAnonymously();
         }
         console.log("Firebase Auth: Signed in with UID:", firebase.auth().currentUser.uid);
     } catch (error) {
         console.error("Firebase Auth: Anonymous sign-in failed:", error);
         showNotification("Connection to server failed. Please restart.", "error");
+        return; // লগইন ব্যর্থ হলে আর এগোনো যাবে না
+    }
+
+    // এখন যেহেতু ব্যবহারকারী লগইন করা আছে, আমরা তার আইডি পেতে পারি
+    state.userId = getUserId(); // <-- নিশ্চিত করুন যে userId সেট করা হয়েছে
+
+    // ধাপ ২: রেফারেল চেক এবং রেজিস্টার করা
+    try {
+        const startParam = tg.initDataUnsafe?.start_param;
+        // আমরা state.referredBy চেক করব যাতে একই রেফারেল বারবার রেজিস্টার না হয়
+        if (startParam && startParam.startsWith('ref_') && !state.referredBy) {
+            const referrerTgId = startParam.replace('ref_', '');
+            const referrerId = `tg_${referrerTgId}`;
+            
+            // ব্যবহারকারী যেন নিজেকেই রেফার করতে না পারে, তা নিশ্চিত করা
+            if (referrerId && referrerId !== state.userId) {
+                console.log("REFERRAL: Found referrer -", referrerId);
+                // setTimeout ছাড়াই সরাসরি কল করা ভালো, কারণ await আছে
+                await registerReferral(referrerId);
+            }
+        }
+    } catch(e) {
+        console.warn("Could not process referral param", e);
+    }
+
+    // ধাপ ৩: ব্যবহারকারীর বাকি ডেটা লোড করা
+    try {
+        updateLoadingProgress(10, 'Initializing app...');
+        await loadUserData();
+    } catch (error) {
+        console.error("Failed to load user data after login:", error);
+        showNotification("Error loading user data.", "error");
         return;
-    } 
+    }
 
-                await loadUserData();
-                updateLoadingProgress(80, 'Setting up interface...');
-                
-                // --- রেফারেল লজিককে এখানে আনা হয়েছে ---
-                // নিশ্চিত করা হয়েছে যে ইউজার ডাটা লোড হওয়ার পরেই এটি রান হবে
-                const startParam = tg.initDataUnsafe?.start_param;
-                console.log(`[Referral] Found start_param: ${startParam}`);
+    // ধাপ ৪: অ্যাপের বাকি অংশ চালু করা
+    updateLoadingProgress(80, 'Setting up interface...');
 
-                if (startParam && startParam.startsWith('ref_')) {
-                    const referrerTgId = startParam.replace('ref_', '');
-                    const referrerId = `tg_${referrerTgId}`;
-                    
-                    console.log(`[Referral] Parsed referrer ID: ${referrerId}`);
-                    console.log(`[Referral] Current user ID: ${state.userId}`);
-                    console.log(`[Referral] Already referred by someone? -> ${state.referredBy}`);
+    const userIdForLink = state.userId.replace('tg_', '').replace('user_', '');
+    state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
+    dom.referralLinkTextElement.textContent = state.referralLink;
 
-                    // কন্ডিশন চেক করা হচ্ছে
-                    if (referrerId && referrerId !== state.userId && !state.referredBy) {
-                        console.log("[Referral] Conditions met. Calling registerReferral function.");
-                        await registerReferral(referrerId);
-                    } else {
-                        console.log("[Referral] Conditions not met. Skipping referral registration.");
-                    }
-                }
-                // --- রেফারেল লজিক শেষ ---
+    try {
+        tg.ready();
+        tg.expand();
+        tg.enableClosingConfirmation();
+    } catch (e) {
+        console.warn("Telegram script not found or failed. Running in browser mode.");
+    }
 
-                const userIdForLink = state.userId.replace('tg_', '').replace('user_', '');
-                state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
-                dom.referralLinkTextElement.textContent = state.referralLink;
+    initializePackages();
+    updateUI();
+    setupTabScrolling();
+    
+    // Setup event listeners
+    dom.tapButton.addEventListener('click', handleTap);
+    dom.submitDepositBtn.addEventListener('click', handleDeposit);
+    dom.withdrawBtn.addEventListener('click', handleWithdraw);
+    
+    dom.copyAddressBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(dom.depositAddressTextElement.textContent);
+        showNotification('Address copied to clipboard!', 'success');
+    });
+    
+    dom.copyRefBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(state.referralLink);
+        showNotification('Referral link copied!', 'success');
+    });
+    
+    dom.shareLinkBtn.addEventListener('click', () => {
+        try {
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(state.referralLink)}&text=${encodeURIComponent('Join Coin Switch and earn crypto rewards!')}`);
+        } catch (e) {
+                navigator.clipboard.writeText(state.referralLink);
+                showNotification('Referral link copied! Share it with friends.', 'info');
+        }
+    });
+    
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
 
-                initializePackages();
-                updateUI();
-                setupTabScrolling();
-                
-                // Setup event listeners
-                dom.tapButton.addEventListener('click', handleTap);
-                dom.submitDepositBtn.addEventListener('click', handleDeposit);
-                dom.withdrawBtn.addEventListener('click', handleWithdraw);
-                
-                dom.copyAddressBtn.addEventListener('click', () => {
-                    navigator.clipboard.writeText(dom.depositAddressTextElement.textContent);
-                    showNotification('Address copied to clipboard!', 'success');
-                });
-                
-                dom.copyRefBtn.addEventListener('click', () => {
-                    navigator.clipboard.writeText(state.referralLink);
-                    showNotification('Referral link copied!', 'success');
-                });
-                
-                dom.shareLinkBtn.addEventListener('click', () => {
-                    try {
-                        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(state.referralLink)}&text=${encodeURIComponent('Join Coin Switch and earn crypto rewards!')}`);
-                    } catch (e) {
-                         navigator.clipboard.writeText(state.referralLink);
-                         showNotification('Referral link copied! Share it with friends.', 'info');
-                    }
-                });
-                
-                document.querySelectorAll('.tab').forEach(tab => {
-                    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-                });
+    dom.packagesContainer.addEventListener('click', (e) => {
+        if (e.target.matches('button[data-package-id]')) {
+            buyPackage(e.target.dataset.packageId);
+        }
+    });
 
-                dom.packagesContainer.addEventListener('click', (e) => {
-                    if (e.target.matches('button[data-package-id]')) {
-                        buyPackage(e.target.dataset.packageId);
-                    }
-                });
+    // Hide loading screen and show main content
+    setTimeout(() => {
+        updateLoadingProgress(100, 'Ready!');
+        setTimeout(() => {
+            dom.loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                dom.loadingScreen.style.display = 'none';
+                dom.mainContent.style.display = 'block';
+            }, 500);
+        }, 500);
+    }, 500);
 
-        
-                // Hide loading screen and show main content
-                setTimeout(() => {
-                    updateLoadingProgress(100, 'Ready!');
-                    setTimeout(() => {
-                        dom.loadingScreen.style.opacity = '0';
-                        setTimeout(() => {
-                            dom.loadingScreen.style.display = 'none';
-                            dom.mainContent.style.display = 'block';
-                        }, 500);
-                    }, 500);
-                }, 500);
-
-                // Start intervals
-                setInterval(passiveMining, 5000);
-                setInterval(updateTapCooldown, 100);
-                setInterval(saveUserData, 30000);
-            };
+    // Start intervals
+    setInterval(passiveMining, 5000);
+    setInterval(updateTapCooldown, 100);
+    setInterval(saveUserData, 30000);
+};
 
             init();
         });
