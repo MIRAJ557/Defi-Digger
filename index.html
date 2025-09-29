@@ -1912,33 +1912,64 @@
                 }
             };
             
-                    const registerReferral = async (referrerId) => {
-                console.log(`[Referral] Attempting to register referral for referrer: ${referrerId}`);
-                try {
-                    // প্রথমে আমরা চেক করব যে রেফারারের ডকুমেন্টটি আসলেই আছে কিনা
-                    const referrerDoc = await db.collection('users').doc(referrerId).get();
+                 const registerReferral = async (referrerId) => {
+    console.log(`[Referral] Attempting to register referral for referrer: ${referrerId}`);
+    try {
+        // 1. প্রথমে চেক করি রেফারার নিজেকে রেফার করছে কিনা
+        if (referrerId === state.userId) {
+            console.log(`[Referral] User cannot refer themselves. Skipping.`);
+            return;
+        }
 
-                    if (!referrerDoc.exists) {
-                        console.error(`[Referral] Error: Referrer with ID ${referrerId} does not exist.`);
-                        return; // রেফারার না থাকলে কাজটি এখানেই শেষ
-                    }
+        // 2. চেক করি আগে থেকে রেফার করা হয়েছে কিনা
+        if (state.referredBy) {
+            console.log(`[Referral] User already referred by: ${state.referredBy}. Skipping.`);
+            return;
+        }
 
-                    // রেফারারের referralCount বৃদ্ধি করা হচ্ছে
-                    await db.collection('users').doc(referrerId).update({
-                        referralCount: firebase.firestore.FieldValue.increment(1)
-                    });
-                    console.log(`[Referral] Successfully incremented referral count for ${referrerId}`);
-                    
-                    // নতুন ইউজারের state-এ referredBy তথ্য যোগ করা হচ্ছে
-                    state.referredBy = referrerId;
-                    await saveUserData(); // এবং ডাটাবেজে সেভ করা হচ্ছে
-                    console.log(`[Referral] Successfully set 'referredBy' for new user.`);
+        // 3. রেফারারের অস্তিত্ব চেক
+        const referrerDoc = await db.collection('users').doc(referrerId).get();
+        if (!referrerDoc.exists) {
+            console.error(`[Referral] Error: Referrer with ID ${referrerId} does not exist.`);
+            return;
+        }
 
-                    showNotification(`Welcome! You were invited by a friend.`, 'info');
-                } catch (error) {
-                    console.error("Error during referral registration process:", error);
-                }
-            };
+        console.log(`[Referral] All conditions met. Processing referral...`);
+
+        // 4. রেফারারের কাউন্ট আপডেট
+        await db.collection('users').doc(referrerId).update({
+            referralCount: firebase.firestore.FieldValue.increment(1),
+            lastReferralTime: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        console.log(`[Referral] Successfully incremented referral count for ${referrerId}`);
+
+        // 5. নতুন ইউজারের referredBy সেট করো
+        state.referredBy = referrerId;
+        
+        // 6. রেফারারকে বোনাস দাও (ঐচ্ছিক)
+        const referralBonus = 5; // 5 CS টোকেন বোনাস
+        await db.collection('users').doc(referrerId).update({
+            csBalance: firebase.firestore.FieldValue.increment(referralBonus)
+        });
+        
+        console.log(`[Referral] Added ${referralBonus} CS bonus to referrer`);
+
+        // 7. নতুন ইউজারকেও ওয়েলকাম বোনাস দাও
+        state.csBalance += 2; // 2 CS টোকেন ওয়েলকাম বোনাস
+        addTransaction('referral_bonus', 2, 'Welcome Bonus for Referral');
+
+        // 8. সবকিছু সেভ করো
+        await saveUserData();
+        
+        console.log(`[Referral] Referral process completed successfully!`);
+        showNotification(`🎉 Welcome! You received 2 CS bonus for joining via referral!`, 'success');
+
+    } catch (error) {
+        console.error("Error during referral registration process:", error);
+        showNotification("Referral registration failed, but you can continue.", "warning");
+    }
+};
 
             const switchTab = (tabId) => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1978,19 +2009,25 @@
                 } catch (e) {
                     console.warn("Telegram script not found or failed. Running in browser mode.");
                 }
+    // REFERRAL SYSTEM - FIXED
+    const StartParam = tg.initDataUnsafe?.start_param;
+    if (startParam && startParam.startsWith('ref_')) {
+        const referrerTgId = startParam.replace('ref_', '');
+        const referrerId = `tg_${referrerTgId}`;
+        console.log("REFERRAL: Found referrer -", referrerId);
+        setTimeout(() => registerReferral(referrerId), 1000);
+    }
 
-                updateLoadingProgress(10, 'Initializing...');
-
-                try {
-                    if (!firebase.auth().currentUser) {
-                        await firebase.auth().signInAnonymously();
-                    }
-                    console.log("Firebase Auth: Signed in with UID:", firebase.auth().currentUser.uid);
-                } catch (error) {
-                    console.error("Firebase Auth: Anonymous sign-in failed:", error);
-                    showNotification("Connection to server failed. Please restart.", "error");
-                    return; // সাইন-ইন ব্যর্থ হলে অ্যাপ আর এগোবে না
-                }
+    try {
+        if (!firebase.auth().currentUser) {
+            await firebase.auth().signInAnonymously();
+        }
+        console.log("Firebase Auth: Signed in with UID:", firebase.auth().currentUser.uid);
+    } catch (error) {
+        console.error("Firebase Auth: Anonymous sign-in failed:", error);
+        showNotification("Connection to server failed. Please restart.", "error");
+        return;
+    } 
 
                 await loadUserData();
                 updateLoadingProgress(80, 'Setting up interface...');
