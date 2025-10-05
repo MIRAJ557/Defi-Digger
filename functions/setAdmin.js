@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 const path = require('path'); // <-- নতুন লাইন: path মডিউল যোগ করুন
 
 // আপনার Firebase Admin SDK JSON ফাইলের জন্য একটি সম্পূর্ণ পাথ তৈরি করুন
-const serviceAccountPath = path.join(__dirname, 'defi-digger-firebase-adminsdk-fb svc-11274178fe.json');
+const serviceAccountPath = path.join(__dirname, 'defi-digger-firebase-adminsdk-fbsvc-11274178fe.json');
 const serviceAccount = require(serviceAccountPath);
 
 admin.initializeApp({
