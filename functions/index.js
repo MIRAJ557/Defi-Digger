@@ -75,15 +75,35 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
         }
         
         // ব্যবহারকারীকে একটি স্বাগত বার্তা পাঠান (ঐচ্ছিক)
-        await axios.post(
-            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-            {
-                chat_id: chatId,
-                text: "Welcome to Coin Switch! Click the button below to start mining.",
-                // এখানে আপনার ওয়েব অ্যাপ খোলার জন্য একটি বাটন যোগ করতে পারেন
-            }
-        );
+      // ব্যবহারকারীকে একটি সুন্দর স্বাগত বার্তা পাঠান
+const message = req.body.message;
+const firstName = message.from.first_name || 'there';
+
+const welcomeText = `Hey, ${firstName}! Welcome to Defi Digger!\nTap on the coin and see your balance rise.\n\n<b>Coin Switch</b> is a cutting-edge financial platform where users can earn tokens by leveraging the mining app's various features. The majority of Coin Switch Token (CS) distribution will occur among the players here.\n\nDo you have friends, relatives, or co-workers?\nBring them all into the App.\nMore buddies, more coins.`;
+
+// আপনার ওয়েব অ্যাপের URL
+const webAppUrl = "https://stirring-pasca-54e480.netlify.app/";
+
+// টেলিগ্রাম API-তে মেসেজ পাঠানোর কোড
+await axios.post(
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+    {
+        chat_id: chatId,
+        text: welcomeText,
+        parse_mode: "HTML",
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: "🚀 Start Mining!", web_app: { url: webAppUrl } }
+                ],
+                [
+                    { text: "🌐 Official Website", url: "https://your-official-website.com" } // এখানে আপনার অফিসিয়াল ওয়েবসাইট লিংক দিন
+                ]
+            ]
+        }
+    
     }
+)};
 
     // টেলিগ্রামকে জানান যে আমরা মেসেজটি পেয়েছি
     return res.sendStatus(200);
