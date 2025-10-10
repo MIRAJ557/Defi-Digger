@@ -1433,27 +1433,35 @@ const getUserId = () => {
                     state.userId = getUserId();
                     const userDoc = await db.collection('users').doc(state.userId).get();
                     
-                    if (userDoc.exists) {
-                        const userData = userDoc.data();
-                        Object.assign(state, userData);
-                        
-                        // Calculate offline earnings
-                        const now = Date.now();
-                        const lastUpdate = state.lastPassiveUpdate || now;
-                        const timePassedInSeconds = (now - lastUpdate) / 1000;
-                        
-                        if (timePassedInSeconds > 1) {
-                            const hourlyCsGain = state.hashPower * CONFIG.HASH_TO_CS_PER_HOUR;
-                            const hourlyUsdGain = state.dailyUsdReward / 24;
-                            
-                            const csGained = (hourlyCsGain / 3600) * timePassedInSeconds;
-                            const usdGained = (hourlyUsdGain / 3600) * timePassedInSeconds;
+                  if (userDoc.exists) {
+    const userData = userDoc.data();
+    Object.assign(state, userData);
+    
+    // Calculate offline earnings - FINAL & CORRECTED VERSION
+    const now = Date.now();
 
-                            state.csBalance += csGained;
-                            if (usdGained > 0) {
-                                state.usdBalance += usdGained;
-                            }
-                            
+    // --- [সুরক্ষা কবচ শুরু] ---
+    // এই লাইনটিতে আগেরবার ভুল ছিল, এখন এটি সম্পূর্ণ সঠিক
+    if (!state.lastPassiveUpdate || typeof state.lastPassiveUpdate !== 'number' || state.lastPassiveUpdate < 1000) {
+        state.lastPassiveUpdate = now;
+    }
+    // --- [সুরক্ষা কবচ শেষ] ---
+
+    const lastUpdate = state.lastPassiveUpdate;
+    const timePassedInSeconds = (now - lastUpdate) / 1000;
+
+    // শুধুমাত্র যৌক্তিক সময়ের জন্য আয় গণনা করা হবে (যেমন, সর্বোচ্চ ৭ দিনের জন্য)
+    if (timePassedInSeconds > 1 && timePassedInSeconds < 604800) { // 604800 সেকেন্ড = ৭ দিন
+        const hourlyCsGain = state.hashPower * CONFIG.HASH_to_CS_PER_HOUR; // একটি ছোট টাইপো ঠিক করা হয়েছে
+        const hourlyUsdGain = state.dailyUsdReward / 24;
+
+        const csGained = (hourlyCsGain / 3600) * timePassedInSeconds;
+        const usdGained = (hourlyUsdGain / 3600) * timePassedInSeconds;
+
+        state.csBalance += csGained;
+        if (usdGained > 0) {
+            state.usdBalance += usdGained;
+        }
                             // Add transaction record for passive earnings
                             if (csGained > 0.001) {
                                 addTransaction('passive_cs', csGained, 'CS Token Mining');
