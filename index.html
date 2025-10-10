@@ -1417,18 +1417,15 @@
             };
 
             // --- FIREBASE FUNCTIONS ---
-            const getUserId = () => {
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    return `tg_${tg.initDataUnsafe.user.id}`;
-                }
-                
-                let userId = localStorage.getItem('coinSwitchUserId');
-                if (!userId) {
-                    userId = 'user_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('coinSwitchUserId', userId);
-                }
-                return userId;
-            };
+         // --- FIREBASE FUNCTIONS ---
+const getUserId = () => {
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+        // শুধুমাত্র টেলিগ্রামের আসল ইউজার আইডি ব্যবহার করা হবে
+        return `tg_${tg.initDataUnsafe.user.id}`;
+    }
+    // যদি টেলিগ্রাম আইডি না পাওয়া যায়, তাহলে null রিটার্ন করবে
+    return null;
+};
 
             const loadUserData = async () => {
                 try {
@@ -2018,6 +2015,12 @@
 
     // এখন যেহেতু ব্যবহারকারী লগইন করা আছে, আমরা তার আইডি পেতে পারি
     state.userId = getUserId(); // <-- নিশ্চিত করুন যে userId সেট করা হয়েছে
+    // ***নতুন সেফটি চেকটি এখানে যোগ করুন***
+if (!state.userId) {
+    console.error("User ID not found. App cannot start.");
+    document.getElementById('loading-text').textContent = "Could not verify user. Please restart the app from Telegram.";
+    return; // অ্যাপ লোড হওয়া এখানেই থামিয়ে দিন
+}
 
     // ধাপ ২: রেফারেল চেক এবং রেজিস্টার করা
     try {
