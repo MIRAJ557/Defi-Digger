@@ -1416,23 +1416,14 @@
                 return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
             };
 
-            // --- FIREBASE FUNCTIONS ---
+           // --- FIREBASE FUNCTIONS ---
             const getUserId = () => {
-                // প্রথমে Telegram User ID চেষ্টা করুন
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-                    const telegramId = tg.initDataUnsafe.user.id;
-                    console.log("Using Telegram User ID:", telegramId);
-                    return `tg_${telegramId}`;
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    console.log("Using Firebase Auth UID as primary key:", user.uid);
+                    return user.uid;
                 }
-                
-                // Fallback: Firebase Auth UID
-                if (firebase.auth().currentUser) {
-                    const firebaseUid = firebase.auth().currentUser.uid;
-                    console.log("Using Firebase UID:", firebaseUid);
-                    return firebaseUid;
-                }
-                
-                console.error("No user ID available");
+                console.error("CRITICAL: Firebase user not authenticated, cannot get UID.");
                 return null;
             };
 
@@ -1481,7 +1472,10 @@
                         state.lastPassiveUpdate = now;
                     } else {
                         // NEW USER - Create default data
-                        console.log("Creating new user with ID:", state.userId);
+                        console.log("Creating new user with Firebase UID:", state.userId);
+                        
+                        const telegramUser = tg.initDataUnsafe.user;
+
                         state.csBalance = 10; // Starting bonus
                         state.usdBalance = 0;
                         state.hashPower = 10;
@@ -1496,6 +1490,14 @@
                         state.transactions = [];
                         state.referredBy = null;
                         
+                        // --- নতুন লাইন যোগ করা হয়েছে ---
+                        if (telegramUser && telegramUser.id) {
+                            state.telegramId = "tg_" + telegramUser.id;
+                            state.telegramUsername = telegramUser.username || 'N/A';
+                        }
+                        state.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                        // --- শেষ ---
+
                         // Save new user to Firebase
                         await saveUserData();
                         
