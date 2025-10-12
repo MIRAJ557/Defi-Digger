@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
     <style>
+        /* আপনার সকল CSS স্টাইল এখানে থাকবে - পরিবর্তন করা হয়নি */
         :root {
             --primary: #0a1f3d;
             --secondary: #1e3a8a;
@@ -1272,7 +1273,7 @@
 
     <script>
         // Firebase configuration
-            const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyB57oI5BOktgge6UJSWsfiAytUY0YgXNSA",
             authDomain: "defi-digger.firebaseapp.com",
             projectId: "defi-digger",
@@ -1282,16 +1283,15 @@
             measurementId: "G-RZ8TLE355C"
         };
 
-
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();       
 
-        // --- নতুন এবং সঠিক App Check কোড (v8 Compat Style) ---
+        // Firebase App Check activation
         try {
             const appCheck = firebase.appCheck();
             appCheck.activate(
-                '6LcmZtYrAAAAANg5TqckGikiEYURbnBzs85wqHrj', // <-- এখানে আপনার Site Key বসান
+                '6LcmZtYrAAAAANg5TqckGikiEYURbnBzs85wqHrj',
                 true
             );
             console.log('Firebase App Check activated successfully.');
@@ -1307,7 +1307,7 @@
                 TAP_COOLDOWN: 5000, // 5 seconds
                 HASH_TO_CS_PER_HOUR: 0.05,
                 MIN_WITHDRAWAL: 10,
-                BOT_USERNAME:  'Defidiggermining_bot',
+                BOT_USERNAME: 'Defidiggermining_bot',
                 BIG_BANG_TAPS: 12,
                 COMBO_TIMEOUT: 3000, // 3 seconds
                 REFERRAL_BONUS_PERCENT: 10
@@ -1417,77 +1417,100 @@
             };
 
             // --- FIREBASE FUNCTIONS ---
-         // --- FIREBASE FUNCTIONS ---
-const getUserId = () => {
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-        // শুধুমাত্র টেলিগ্রামের আসল ইউজার আইডি ব্যবহার করা হবে
-        return `tg_${tg.initDataUnsafe.user.id}`;
-    }
-    // যদি টেলিগ্রাম আইডি না পাওয়া যায়, তাহলে null রিটার্ন করবে
-    return null;
-};
+            const getUserId = () => {
+                // প্রথমে Telegram User ID চেষ্টা করুন
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+                    const telegramId = tg.initDataUnsafe.user.id;
+                    console.log("Using Telegram User ID:", telegramId);
+                    return `tg_${telegramId}`;
+                }
+                
+                // Fallback: Firebase Auth UID
+                if (firebase.auth().currentUser) {
+                    const firebaseUid = firebase.auth().currentUser.uid;
+                    console.log("Using Firebase UID:", firebaseUid);
+                    return firebaseUid;
+                }
+                
+                console.error("No user ID available");
+                return null;
+            };
 
             const loadUserData = async () => {
                 try {
-                    updateLoadingProgress(30, 'Loading user data...');
-                    state.userId = getUserId();
+                    updateLoadingProgress(40, 'Loading user data...');
+                    
+                    if (!state.userId) {
+                        throw new Error("User ID not available");
+                    }
+
                     const userDoc = await db.collection('users').doc(state.userId).get();
                     
-                  if (userDoc.exists) {
-    const userData = userDoc.data();
-    Object.assign(state, userData);
-    
-    // Calculate offline earnings - FINAL & CORRECTED VERSION
-    const now = Date.now();
-
-    // --- [সুরক্ষা কবচ শুরু] ---
-    // এই লাইনটিতে আগেরবার ভুল ছিল, এখন এটি সম্পূর্ণ সঠিক
-    if (!state.lastPassiveUpdate || typeof state.lastPassiveUpdate !== 'number' || state.lastPassiveUpdate < 1000) {
-        state.lastPassiveUpdate = now;
-    }
-    // --- [সুরক্ষা কবচ শেষ] ---
-
-    const lastUpdate = state.lastPassiveUpdate;
-    const timePassedInSeconds = (now - lastUpdate) / 1000;
-
-    // শুধুমাত্র যৌক্তিক সময়ের জন্য আয় গণনা করা হবে (যেমন, সর্বোচ্চ ৭ দিনের জন্য)
-    if (timePassedInSeconds > 1 && timePassedInSeconds < 604800) { // 604800 সেকেন্ড = ৭ দিন
-        const hourlyCsGain = state.hashPower * CONFIG.HASH_to_CS_PER_HOUR; // একটি ছোট টাইপো ঠিক করা হয়েছে
-        const hourlyUsdGain = state.dailyUsdReward / 24;
-
-        const csGained = (hourlyCsGain / 3600) * timePassedInSeconds;
-        const usdGained = (hourlyUsdGain / 3600) * timePassedInSeconds;
-
-        state.csBalance += csGained;
-        if (usdGained > 0) {
-            state.usdBalance += usdGained;
-        }
-                            // Add transaction record for passive earnings
-                            if (csGained > 0.001) {
-                                addTransaction('passive_cs', csGained, 'CS Token Mining');
-                            }
-                            if (usdGained > 0.001) {
-                                addTransaction('passive_usd', usdGained, 'USD Earnings');
+                    if (userDoc.exists) {
+                        console.log("User data found in Firebase");
+                        const userData = userDoc.data();
+                        Object.assign(state, userData);
+                        
+                        // Offline earnings calculation...
+                        const now = Date.now();
+                        if (state.lastPassiveUpdate && typeof state.lastPassiveUpdate === 'number') {
+                            const timePassedInSeconds = (now - state.lastPassiveUpdate) / 1000;
+                            
+                            if (timePassedInSeconds > 1 && timePassedInSeconds < 604800) {
+                                const hourlyCsGain = state.hashPower * CONFIG.HASH_TO_CS_PER_HOUR;
+                                const hourlyUsdGain = state.dailyUsdReward / 24;
+                                
+                                const csGained = (hourlyCsGain / 3600) * timePassedInSeconds;
+                                const usdGained = (hourlyUsdGain / 3600) * timePassedInSeconds;
+                                
+                                state.csBalance += csGained;
+                                if (usdGained > 0) {
+                                    state.usdBalance += usdGained;
+                                }
+                                
+                                // Transactions add করুন
+                                if (csGained > 0.001) {
+                                    addTransaction('passive_cs', csGained, 'Passive CS Mining');
+                                }
+                                if (usdGained > 0.001) {
+                                    addTransaction('passive_usd', usdGained, 'Passive USD Earnings');
+                                }
                             }
                         }
+                        
+                        state.lastPassiveUpdate = now;
+                    } else {
+                        // NEW USER - Create default data
+                        console.log("Creating new user with ID:", state.userId);
+                        state.csBalance = 10; // Starting bonus
+                        state.usdBalance = 0;
+                        state.hashPower = 10;
+                        state.dailyUsdReward = 0;
+                        state.purchasedPackages = [];
+                        state.referralCount = 0;
+                        state.userLevel = 1;
+                        state.userXP = 0;
+                        state.tapCount = 0;
+                        state.comboCount = 0;
+                        state.lastPassiveUpdate = Date.now();
+                        state.transactions = [];
+                        state.referredBy = null;
+                        
+                        // Save new user to Firebase
+                        await saveUserData();
+                        
+                        // Add welcome transaction
+                        addTransaction('welcome_bonus', 10, 'Welcome Bonus CS Tokens');
+                        
+                        showNotification("Welcome! You received 10 CS tokens bonus!", "success");
                     }
                     
-                    state.lastPassiveUpdate = Date.now();
-                    if (!userDoc.exists) {
-                        await saveUserData();
-                    }
-
                     updateLoadingProgress(60, 'Loading transaction history...');
                     await loadTransactionHistory();
 
                 } catch (error) {
                     console.error("Error loading user data:", error);
-                    showNotification("Error loading data. Using local backup.", "error");
-                    
-                    const savedState = localStorage.getItem('coinSwitchState');
-                    if (savedState) {
-                        state = { ...state, ...JSON.parse(savedState) };
-                    }
+                    throw error; // Re-throw so init function can handle it
                 }
             };
 
@@ -1917,64 +1940,64 @@ const getUserId = () => {
                 }
             };
             
-                 const registerReferral = async (referrerId) => {
-    console.log(`[Referral] Attempting to register referral for referrer: ${referrerId}`);
-    try {
-        // 1. প্রথমে চেক করি রেফারার নিজেকে রেফার করছে কিনা
-        if (referrerId === state.userId) {
-            console.log(`[Referral] User cannot refer themselves. Skipping.`);
-            return;
-        }
+            const registerReferral = async (referrerId) => {
+                console.log(`[Referral] Attempting to register referral for referrer: ${referrerId}`);
+                try {
+                    // 1. প্রথমে চেক করি রেফারার নিজেকে রেফার করছে কিনা
+                    if (referrerId === state.userId) {
+                        console.log(`[Referral] User cannot refer themselves. Skipping.`);
+                        return;
+                    }
 
-        // 2. চেক করি আগে থেকে রেফার করা হয়েছে কিনা
-        if (state.referredBy) {
-            console.log(`[Referral] User already referred by: ${state.referredBy}. Skipping.`);
-            return;
-        }
+                    // 2. চেক করি আগে থেকে রেফার করা হয়েছে কিনা
+                    if (state.referredBy) {
+                        console.log(`[Referral] User already referred by: ${state.referredBy}. Skipping.`);
+                        return;
+                    }
 
-        // 3. রেফারারের অস্তিত্ব চেক
-        const referrerDoc = await db.collection('users').doc(referrerId).get();
-        if (!referrerDoc.exists) {
-            console.error(`[Referral] Error: Referrer with ID ${referrerId} does not exist.`);
-            return;
-        }
+                    // 3. রেফারারের অস্তিত্ব চেক
+                    const referrerDoc = await db.collection('users').doc(referrerId).get();
+                    if (!referrerDoc.exists) {
+                        console.error(`[Referral] Error: Referrer with ID ${referrerId} does not exist.`);
+                        return;
+                    }
 
-        console.log(`[Referral] All conditions met. Processing referral...`);
+                    console.log(`[Referral] All conditions met. Processing referral...`);
 
-        // 4. রেফারারের কাউন্ট আপডেট
-        await db.collection('users').doc(referrerId).update({
-            referralCount: firebase.firestore.FieldValue.increment(1),
-            lastReferralTime: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        console.log(`[Referral] Successfully incremented referral count for ${referrerId}`);
+                    // 4. রেফারারের কাউন্ট আপডেট
+                    await db.collection('users').doc(referrerId).update({
+                        referralCount: firebase.firestore.FieldValue.increment(1),
+                        lastReferralTime: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    console.log(`[Referral] Successfully incremented referral count for ${referrerId}`);
 
-        // 5. নতুন ইউজারের referredBy সেট করো
-        state.referredBy = referrerId;
-        
-        // 6. রেফারারকে বোনাস দাও (ঐচ্ছিক)
-        const referralBonus = 5; // 5 CS টোকেন বোনাস
-        await db.collection('users').doc(referrerId).update({
-            csBalance: firebase.firestore.FieldValue.increment(referralBonus)
-        });
-        
-        console.log(`[Referral] Added ${referralBonus} CS bonus to referrer`);
+                    // 5. নতুন ইউজারের referredBy সেট করো
+                    state.referredBy = referrerId;
+                    
+                    // 6. রেফারারকে বোনাস দাও (ঐচ্ছিক)
+                    const referralBonus = 5; // 5 CS টোকেন বোনাস
+                    await db.collection('users').doc(referrerId).update({
+                        csBalance: firebase.firestore.FieldValue.increment(referralBonus)
+                    });
+                    
+                    console.log(`[Referral] Added ${referralBonus} CS bonus to referrer`);
 
-        // 7. নতুন ইউজারকেও ওয়েলকাম বোনাস দাও
-        state.csBalance += 2; // 2 CS টোকেন ওয়েলকাম বোনাস
-        addTransaction('referral_bonus', 2, 'Welcome Bonus for Referral');
+                    // 7. নতুন ইউজারকেও ওয়েলকাম বোনাস দাও
+                    state.csBalance += 2; // 2 CS টোকেন ওয়েলকাম বোনাস
+                    addTransaction('referral_bonus', 2, 'Welcome Bonus for Referral');
 
-        // 8. সবকিছু সেভ করো
-        await saveUserData();
-        
-        console.log(`[Referral] Referral process completed successfully!`);
-        showNotification(`🎉 Welcome! You received 2 CS bonus for joining via referral!`, 'success');
+                    // 8. সবকিছু সেভ করো
+                    await saveUserData();
+                    
+                    console.log(`[Referral] Referral process completed successfully!`);
+                    showNotification(`🎉 Welcome! You received 2 CS bonus for joining via referral!`, 'success');
 
-    } catch (error) {
-        console.error("Error during referral registration process:", error);
-        showNotification("Referral registration failed, but you can continue.", "warning");
-    }
-};
+                } catch (error) {
+                    console.error("Error during referral registration process:", error);
+                    showNotification("Referral registration failed, but you can continue.", "warning");
+                }
+            };
 
             const switchTab = (tabId) => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -2006,130 +2029,127 @@ const getUserId = () => {
                 dom.tabNavRight.addEventListener('click', () => tabs.scrollBy({ left: 150, behavior: 'smooth' }));
                 checkScroll();
             };
+
+            const setupEventListeners = () => {
+                dom.tapButton.addEventListener('click', handleTap);
+                dom.submitDepositBtn.addEventListener('click', handleDeposit);
+                dom.withdrawBtn.addEventListener('click', handleWithdraw);
+                
+                dom.copyAddressBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(dom.depositAddressTextElement.textContent);
+                    showNotification('Address copied to clipboard!', 'success');
+                });
+                
+                dom.copyRefBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(state.referralLink);
+                    showNotification('Referral link copied!', 'success');
+                });
+                
+                dom.shareLinkBtn.addEventListener('click', () => {
+                    try {
+                        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(state.referralLink)}&text=${encodeURIComponent('Join Coin Switch and earn crypto rewards!')}`);
+                    } catch (e) {
+                        navigator.clipboard.writeText(state.referralLink);
+                        showNotification('Referral link copied! Share it with friends.', 'info');
+                    }
+                });
+                
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+                });
+
+                dom.packagesContainer.addEventListener('click', (e) => {
+                    if (e.target.matches('button[data-package-id]')) {
+                        buyPackage(e.target.dataset.packageId);
+                    }
+                });
+            };
             
-                 const init = async () => {
- console.log("Coin Switch App - Version 3.0 LOADED!");
- // ধাপ ১: ব্যবহারকারীকে লগইন করানো
-    try {
-        if (!firebase.auth().currentUser) {
-            console.log("No user logged in. Signing in anonymously...");
-            await firebase.auth().signInAnonymously();
-        }
-        console.log("Firebase Auth: Signed in with UID:", firebase.auth().currentUser.uid);
-    } catch (error) {
-        console.error("Firebase Auth: Anonymous sign-in failed:", error);
-        showNotification("Connection to server failed. Please restart.", "error");
-        return; // লগইন ব্যর্থ হলে আর এগোনো যাবে না
-    }
+            const init = async () => {
+                console.log("Coin Switch App - Version 3.1 LOADED!");
+                
+                try {
+                    // Step 1: Firebase Auth দিয়ে Sign In
+                    updateLoadingProgress(20, 'Connecting to server...');
+                    
+                    await firebase.auth().signInAnonymously();
+                    const user = firebase.auth().currentUser;
+                    
+                    if (!user) {
+                        throw new Error("Authentication failed");
+                    }
+                    
+                    console.log("Firebase Auth: Signed in with UID:", user.uid);
+                    
+                    // Step 2: User ID সেট করুন
+                    state.userId = getUserId();
+                    
+                    // Fallback: যদি Telegram ID না পাওয়া যায়, Firebase UID ব্যবহার করুন
+                    if (!state.userId) {
+                        state.userId = user.uid;
+                        console.log("Using Firebase UID as User ID:", state.userId);
+                    }
 
-    // এখন যেহেতু ব্যবহারকারী লগইন করা আছে, আমরা তার আইডি পেতে পারি
-    state.userId = getUserId(); // <-- নিশ্চিত করুন যে userId সেট করা হয়েছে
-    // ***নতুন সেফটি চেকটি এখানে যোগ করুন***
-if (!state.userId) {
-    console.error("User ID not found. App cannot start.");
-    document.getElementById('loading-text').textContent = "Could not verify user. Please restart the app from Telegram.";
-    return; // অ্যাপ লোড হওয়া এখানেই থামিয়ে দিন
-}
+                    // Step 3: User Data লোড করুন
+                    await loadUserData();
 
-    // ধাপ ২: রেফারেল চেক এবং রেজিস্টার করা
-    try {
-        const startParam = tg.initDataUnsafe?.start_param;
-        // আমরা state.referredBy চেক করব যাতে একই রেফারেল বারবার রেজিস্টার না হয়
-        if (startParam && startParam.startsWith('ref_') && !state.referredBy) {
-            const referrerTgId = startParam.replace('ref_', '');
-            const referrerId = `tg_${referrerTgId}`;
-            
-            // ব্যবহারকারী যেন নিজেকেই রেফার করতে না পারে, তা নিশ্চিত করা
-            if (referrerId && referrerId !== state.userId) {
-                console.log("REFERRAL: Found referrer -", referrerId);
-                // setTimeout ছাড়াই সরাসরি কল করা ভালো, কারণ await আছে
-                await registerReferral(referrerId);
-            }
-        }
-    } catch(e) {
-        console.warn("Could not process referral param", e);
-    }
+                } catch (error) {
+                    console.error("Initialization failed:", error);
+                    
+                    // Fallback: Local storage থেকে ডেটা লোড করুন
+                    const savedState = localStorage.getItem('coinSwitchState');
+                    if (savedState) {
+                        state = { ...state, ...JSON.parse(savedState) };
+                        showNotification("Using local data. Some features may be limited.", "warning");
+                    } else {
+                        showNotification("Connection failed. Please check your internet.", "error");
+                        return;
+                    }
+                }
 
-    // ধাপ ৩: ব্যবহারকারীর বাকি ডেটা লোড করা
-    try {
-        updateLoadingProgress(10, 'Initializing app...');
-        await loadUserData();
-    } catch (error) {
-        console.error("Failed to load user data after login:", error);
-        showNotification("Error loading user data.", "error");
-        return;
-    }
+                // বাকি initialization কোড...
+                updateLoadingProgress(80, 'Setting up interface...');
 
-    // ধাপ ৪: অ্যাপের বাকি অংশ চালু করা
-    updateLoadingProgress(80, 'Setting up interface...');
+                // Referral link সেটআপ
+                const userIdForLink = state.userId.replace('tg_', '').replace('user_', '');
+                state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
+                dom.referralLinkTextElement.textContent = state.referralLink;
 
-    const userIdForLink = state.userId.replace('tg_', '').replace('user_', '');
-    state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
-    dom.referralLinkTextElement.textContent = state.referralLink;
+                // Telegram WebApp সেটআপ
+                try {
+                    tg.ready();
+                    tg.expand();
+                    // এই লাইনটি remove করুন বা try-catch এ রাখুন
+                    // tg.enableClosingConfirmation();
+                } catch (e) {
+                    console.warn("Telegram features not available:", e);
+                }
 
-    try {
-        tg.ready();
-        tg.expand();
-        tg.enableClosingConfirmation();
-    } catch (e) {
-        console.warn("Telegram script not found or failed. Running in browser mode.");
-    }
+                // UI সেটআপ
+                initializePackages();
+                updateUI();
+                setupTabScrolling();
+                
+                // Event listeners সেটআপ
+                setupEventListeners();
 
-    initializePackages();
-    updateUI();
-    setupTabScrolling();
-    
-    // Setup event listeners
-    dom.tapButton.addEventListener('click', handleTap);
-    dom.submitDepositBtn.addEventListener('click', handleDeposit);
-    dom.withdrawBtn.addEventListener('click', handleWithdraw);
-    
-    dom.copyAddressBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(dom.depositAddressTextElement.textContent);
-        showNotification('Address copied to clipboard!', 'success');
-    });
-    
-    dom.copyRefBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(state.referralLink);
-        showNotification('Referral link copied!', 'success');
-    });
-    
-    dom.shareLinkBtn.addEventListener('click', () => {
-        try {
-            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(state.referralLink)}&text=${encodeURIComponent('Join Coin Switch and earn crypto rewards!')}`);
-        } catch (e) {
-                navigator.clipboard.writeText(state.referralLink);
-                showNotification('Referral link copied! Share it with friends.', 'info');
-        }
-    });
-    
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-    });
+                // Loading screen hide করুন
+                setTimeout(() => {
+                    updateLoadingProgress(100, 'Ready!');
+                    setTimeout(() => {
+                        dom.loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            dom.loadingScreen.style.display = 'none';
+                            dom.mainContent.style.display = 'block';
+                        }, 500);
+                    }, 500);
+                }, 500);
 
-    dom.packagesContainer.addEventListener('click', (e) => {
-        if (e.target.matches('button[data-package-id]')) {
-            buyPackage(e.target.dataset.packageId);
-        }
-    });
-
-    // Hide loading screen and show main content
-    setTimeout(() => {
-        updateLoadingProgress(100, 'Ready!');
-        setTimeout(() => {
-            dom.loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                dom.loadingScreen.style.display = 'none';
-                dom.mainContent.style.display = 'block';
-            }, 500);
-        }, 500);
-    }, 500);
-
-    // Start intervals
-    setInterval(passiveMining, 5000);
-    setInterval(updateTapCooldown, 100);
-    setInterval(saveUserData, 30000);
-};
+                // Intervals start করুন
+                setInterval(passiveMining, 5000);
+                setInterval(updateTapCooldown, 100);
+                setInterval(saveUserData, 30000);
+            };
 
             init();
         });
