@@ -1207,69 +1207,61 @@
             };
 
             // Load dashboard statistics
-            const loadDashboardStats = async () => {
-                try {
-                    // Get total users
-                    const usersSnapshot = await db.collection('users').get();
-                    dom.totalUsers.textContent = usersSnapshot.size;
-                    
-                    // Get total deposits and withdrawals
-                    let totalDeposits = 0;
-                    let totalWithdrawals = 0;
-                    let pendingRequests = 0;
-                    
-                    const depositsSnapshot = await db.collection('deposits').get();
-                    depositsSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.status === 'approved') {
-                            totalDeposits += data.amount;
-                        }
-                        if (data.status === 'pending') {
-                            pendingRequests++;
-                        }
-                    });
-                    
-                    const withdrawalsSnapshot = await db.collection('withdrawals').get();
-                    withdrawalsSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.status === 'approved') {
-                            totalWithdrawals += data.amount;
-                        }
-                        if (data.status === 'pending') {
-                            pendingRequests++;
-                        }
-                    });
-                    
-                    dom.totalDeposits.textContent = `$${totalDeposits.toFixed(2)}`;
-                    dom.totalWithdrawals.textContent = `$${totalWithdrawals.toFixed(2)}`;
-                    dom.pendingRequests.textContent = pendingRequests;
-                } catch (error) {
-                    console.error('Error loading dashboard stats:', error);
-                    showNotification('Error loading dashboard statistics', 'error');
-                }
-            };
+        const loadDashboardStats = async () => {
+            try {
+                // Get total users
+                const usersSnapshot = await db.collection('users').get();
+                dom.totalUsers.textContent = usersSnapshot.size;
+                
+                let totalDeposits = 0;
+                let totalWithdrawals = 0;
+                let pendingRequests = 0;
+                
+                const depositsSnapshot = await db.collection('deposits').where('status', '==', 'approved').get();
+                depositsSnapshot.forEach(doc => {
+                    totalDeposits += doc.data().amount;
+                });
+                
+                const withdrawalsSnapshot = await db.collection('withdrawals').where('status', '==', 'approved').get();
+                withdrawalsSnapshot.forEach(doc => {
+                    totalWithdrawals += doc.data().amount;
+                });
+                
+                const pendingDeposits = await db.collection('deposits').where('status', '==', 'pending').get();
+                const pendingWithdrawals = await db.collection('withdrawals').where('status', '==', 'pending').get();
+                pendingRequests = pendingDeposits.size + pendingWithdrawals.size;
+
+                dom.totalDeposits.textContent = `$${totalDeposits.toFixed(2)}`;
+                dom.totalWithdrawals.textContent = `$${totalWithdrawals.toFixed(2)}`;
+                dom.pendingRequests.textContent = pendingRequests;
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                showNotification('Error loading dashboard statistics', 'error');
+            }
+        };
 
             // Load users
             const loadUsers = async () => {
-                try {
-                    const usersSnapshot = await db.collection('users').get();
-                    const users = [];
-                    
-                    usersSnapshot.forEach(doc => {
-                        users.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    filteredUsers = users;
-                    displayUsers();
-                    generatePagination(users.length, currentUsersPage, 'users');
-                } catch (error) {
-                    console.error('Error loading users:', error);
-                    showNotification('Error loading users', 'error');
-                }
-            };
+    try {
+        const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+        const users = [];
+        
+        usersSnapshot.forEach(doc => {
+            users.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        filteredUsers = users;
+        currentUsersPage = 1;
+        displayUsers();
+        generatePagination(filteredUsers.length, currentUsersPage, 'users');
+    } catch (error) {
+        console.error('Error loading users:', error);
+        showNotification('Error loading users', 'error');
+    }
+};
 
             // Display users in table
             const displayUsers = () => {
@@ -1974,37 +1966,30 @@
             };
 
             // Load settings
-            const loadSettings = async () => {
-                try {
-                    const settingsDoc = await db.collection('settings').doc('appSettings').get();
-                    
-                    if (settingsDoc.exists) {
-                        settings = settingsDoc.data();
-                        
-                        // Update form fields
-                        dom.csTokenPrice.value = settings.csTokenPrice || 0.05;
-                        dom.tapReward.value = settings.tapReward || 0.5;
-                        dom.minWithdrawal.value = settings.minWithdrawal || 10;
-                        dom.hashToCs.value = settings.hashToCs || 0.05;
-                    }
-                    
-                    // Load packages
-                    const packagesSnapshot = await db.collection('packages').get();
-                    packages = [];
-                    
-                    packagesSnapshot.forEach(doc => {
-                        packages.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    displayPackages();
-                } catch (error) {
-                    console.error('Error loading settings:', error);
-                    showNotification('Error loading settings', 'error');
+           const loadSettings = async () => {
+            try {
+                const settingsDoc = await db.collection('settings').doc('appSettings').get();
+                
+                if (settingsDoc.exists) {
+                    settings = settingsDoc.data();
+                    dom.csTokenPrice.value = settings.csTokenPrice || 0.05;
+                    dom.tapReward.value = settings.tapReward || 0.5;
+                    dom.minWithdrawal.value = settings.minWithdrawal || 10;
+                    dom.hashToCs.value = settings.hashToCs || 0.05;
                 }
-            };
+                
+                const packagesSnapshot = await db.collection('packages').get();
+                packages = [];
+                packagesSnapshot.forEach(doc => {
+                    packages.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayPackages();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Error loading settings', 'error');
+            }
+        };
 
             // Display packages
             const displayPackages = () => {
