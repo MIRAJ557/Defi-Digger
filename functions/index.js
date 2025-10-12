@@ -82,7 +82,7 @@ const firstName = message.from.first_name || 'there';
 const welcomeText = `Hey, ${firstName}! Welcome to Defi Digger!\nTap on the coin and see your balance rise.\n\n<b>Coin Switch</b> is a cutting-edge financial platform where users can earn tokens by leveraging the mining app's various features. The majority of Coin Switch Token (CS) distribution will occur among the players here.\n\nDo you have friends, relatives, or co-workers?\nBring them all into the App.\nMore buddies, more coins.`;
 
 // আপনার ওয়েব অ্যাপের URL
-const webAppUrl = "https://stirring-pasca-54e480.netlify.app/";
+const webAppUrl = "https://defi-digger.web.app";
 
 // টেলিগ্রাম API-তে মেসেজ পাঠানোর কোড
 await axios.post(
