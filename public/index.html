@@ -2067,91 +2067,94 @@
                 });
             };
             
-            const init = async () => {
-                console.log("Coin Switch App - Version 3.1 LOADED!");
-                
-                try {
-                    // Step 1: Firebase Auth দিয়ে Sign In
-                    updateLoadingProgress(20, 'Connecting to server...');
-                    
-                    await firebase.auth().signInAnonymously();
-                    const user = firebase.auth().currentUser;
-                    
-                    if (!user) {
-                        throw new Error("Authentication failed");
-                    }
-                    
-                    console.log("Firebase Auth: Signed in with UID:", user.uid);
-                    
-                    // Step 2: User ID সেট করুন
-                    state.userId = getUserId();
-                    
-                    // Fallback: যদি Telegram ID না পাওয়া যায়, Firebase UID ব্যবহার করুন
-                    if (!state.userId) {
-                        state.userId = user.uid;
-                        console.log("Using Firebase UID as User ID:", state.userId);
-                    }
+           const init = async () => {
+            // ভার্সন নম্বর আপডেট করা হলো যাতে বোঝা যায় নতুন কোড চলছে
+            console.log("Coin Switch App - Version 3.2 (Stable ID Fix) LOADED!");
+            
+            try {
+                // ধাপ ১: Firebase সার্ভারের সাথে একটি নিরাপদ সংযোগ স্থাপন
+                // এটি App Check ও Security Rules এর জন্য প্রয়োজন, কিন্তু আমরা এর UID ব্যবহার করব না।
+                updateLoadingProgress(20, 'Connecting to server...');
+                await firebase.auth().signInAnonymously();
+                console.log("Firebase security context established.");
 
-                    // Step 3: User Data লোড করুন
-                    await loadUserData();
+                // ধাপ ২: টেলিগ্রাম থেকে ব্যবহারকারীর আসল এবং স্থায়ী পরিচয় নেওয়া
+                updateLoadingProgress(30, 'Verifying user identity...');
+                const telegramUser = tg.initDataUnsafe.user;
 
-                } catch (error) {
-                    console.error("Initialization failed:", error);
-                    
-                    // Fallback: Local storage থেকে ডেটা লোড করুন
-                    const savedState = localStorage.getItem('coinSwitchState');
-                    if (savedState) {
-                        state = { ...state, ...JSON.parse(savedState) };
-                        showNotification("Using local data. Some features may be limited.", "warning");
-                    } else {
-                        showNotification("Connection failed. Please check your internet.", "error");
-                        return;
-                    }
+                // নিশ্চিত করা হচ্ছে যে অ্যাপটি টেলিগ্রামের ভেতরেই চলছে এবং ইউজার আইডি পাওয়া গেছে
+                if (!telegramUser || !telegramUser.id) {
+                    throw new Error("Telegram user data not found. Please open this app via Telegram.");
                 }
 
-                // বাকি initialization কোড...
-                updateLoadingProgress(80, 'Setting up interface...');
-
-                // Referral link সেটআপ
-                const userIdForLink = state.userId.replace('tg_', '').replace('user_', '');
-                state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
-                dom.referralLinkTextElement.textContent = state.referralLink;
-
-                // Telegram WebApp সেটআপ
-                try {
-                    tg.ready();
-                    tg.expand();
-                    // এই লাইনটি remove করুন বা try-catch এ রাখুন
-                    // tg.enableClosingConfirmation();
-                } catch (e) {
-                    console.warn("Telegram features not available:", e);
-                }
-
-                // UI সেটআপ
-                initializePackages();
-                updateUI();
-                setupTabScrolling();
+                // ধাপ ৩: টেলিগ্রাম আইডি-কে ভিত্তি করে একটি স্থায়ী এবং ইউনিক ডকুমেন্ট আইডি তৈরি করা
+                // এখন থেকে এটিই হবে আমাদের ডাটাবেজে ব্যবহারকারীর মূল পরিচয়
+                state.userId = `tg_${telegramUser.id}`;
+                console.log(`User identity locked to stable Telegram ID: ${state.userId}`);
                 
-                // Event listeners সেটআপ
-                setupEventListeners();
+                // ধাপ ৪: এই নতুন এবং স্থায়ী আইডি ব্যবহার করে ব্যবহারকারীর ডেটা লোড বা তৈরি করা
+                await loadUserData();
 
-                // Loading screen hide করুন
+            } catch (error) {
+                console.error("Critical Initialization Failed:", error);
+                
+                // যদি কোনো কারণে ইন্টারনেট বা অন্য সমস্যায় ডেটা লোড না হয়
+                const savedState = localStorage.getItem('coinSwitchState');
+                if (savedState) {
+                    state = { ...state, ...JSON.parse(savedState) };
+                    showNotification("Offline mode. Using last saved data.", "warning");
+                } else {
+                    // যদি অ্যাপ টেলিগ্রামের বাইরে খোলা হয় বা কোনো বড় সমস্যা হয়
+                    showNotification(error.message || "Connection failed. Please check your internet.", "error");
+                    // এখানে অ্যাপ চালানো বন্ধ করে দেওয়া হলো কারণ ইউজার আইডি ছাড়া অ্যাপ চলতে পারবে না
+                    return; 
+                }
+            }
+
+            // --- নিচের অংশটুকু আপনার আগের কোডের মতোই, এখানে কোনো পরিবর্তনের প্রয়োজন নেই ---
+
+            // বাকি initialization কোড...
+            updateLoadingProgress(80, 'Setting up interface...');
+
+            // Referral link সেটআপ
+            // এখন state.userId সব সময় 'tg_' দিয়ে শুরু হবে, তাই এই কোড এখন ১০০% সঠিকভাবে কাজ করবে
+            const userIdForLink = state.userId.replace('tg_', '');
+            state.referralLink = `https://t.me/${CONFIG.BOT_USERNAME}?start=ref_${userIdForLink}`;
+            dom.referralLinkTextElement.textContent = state.referralLink;
+
+            // Telegram WebApp সেটআপ
+            try {
+                tg.ready();
+                tg.expand();
+            } catch (e) {
+                console.warn("Telegram features not available:", e);
+            }
+
+            // UI সেটআপ
+            initializePackages();
+            updateUI();
+            setupTabScrolling();
+            
+            // Event listeners সেটআপ
+            setupEventListeners();
+
+            // Loading screen hide করুন
+            setTimeout(() => {
+                updateLoadingProgress(100, 'Ready!');
                 setTimeout(() => {
-                    updateLoadingProgress(100, 'Ready!');
+                    dom.loadingScreen.style.opacity = '0';
                     setTimeout(() => {
-                        dom.loadingScreen.style.opacity = '0';
-                        setTimeout(() => {
-                            dom.loadingScreen.style.display = 'none';
-                            dom.mainContent.style.display = 'block';
-                        }, 500);
+                        dom.loadingScreen.style.display = 'none';
+                        dom.mainContent.style.display = 'block';
                     }, 500);
                 }, 500);
+            }, 500);
 
-                // Intervals start করুন
-                setInterval(passiveMining, 5000);
-                setInterval(updateTapCooldown, 100);
-                setInterval(saveUserData, 30000);
-            };
+            // Intervals start করুন
+            setInterval(passiveMining, 5000);
+            setInterval(updateTapCooldown, 100);
+            setInterval(saveUserData, 30000); // প্রতি ৩০ সেকেন্ডে ডেটা অটো-সেভ হবে
+        };
 
             init();
         });
