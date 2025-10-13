@@ -1888,65 +1888,91 @@
                 });
             };
 
-            // Search user for wallet management
-            const searchWalletUser = async () => {
+       // Global variable to hold the listener, so we can stop it later
+            let userListener = null;
+
+            // Search user for wallet management (Real-time version)
+            const searchWalletUser = () => {
                 const searchTerm = dom.walletUserSearch.value.trim();
                 if (!searchTerm) {
                     showNotification('Please enter a user ID, Telegram ID, or Username', 'error');
                     return;
                 }
 
-                try {
-                    let userDoc;
+                // If there's an old listener, unsubscribe from it first to prevent multiple listeners
+                if (userListener) {
+                    userListener(); // This stops the old real-time updates
+                }
+
+                let query;
+                
+                // Try to find user by different identifiers
+                if (searchTerm.startsWith('tg_')) {
+                    // Search by telegramId
+                    query = db.collection('users').where('telegramId', '==', searchTerm);
+                } else if (searchTerm.includes('@')) {
+                    // Search by telegramUsername
+                    const username = searchTerm.startsWith('@') ? searchTerm.substring(1) : searchTerm;
+                    query = db.collection('users').where('telegramUsername', '==', username);
+                } else {
+                    // Default search by Firebase User ID (document ID)
+                    const userDocRef = db.collection('users').doc(searchTerm);
                     
-                    // Try to find user by different identifiers
-                    if (searchTerm.startsWith('tg_')) {
-                        // Search by telegramId
-                        const usersSnapshot = await db.collection('users')
-                            .where('telegramId', '==', searchTerm)
-                            .get();
-                        
-                        if (!usersSnapshot.empty) {
-                            userDoc = usersSnapshot.docs[0];
+                    // For a single document, we listen directly to it
+                    userListener = userDocRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            displayWalletUserDetails({ id: doc.id, ...doc.data() });
+                        } else {
+                            handleUserNotFound();
                         }
-                    } else if (searchTerm.includes('@')) {
-                        // Search by telegramUsername
-                        const usersSnapshot = await db.collection('users')
-                            .where('telegramUsername', '==', searchTerm)
-                            .get();
-                        
-                        if (!usersSnapshot.empty) {
-                            userDoc = usersSnapshot.docs[0];
-                        }
+                    }, handleSnapshotError);
+                    return; // Exit function since we've started the listener
+                }
+
+                // For queries, we listen to the query result
+                userListener = query.onSnapshot((snapshot) => {
+                    if (!snapshot.empty) {
+                        // Assuming the first result is the correct one
+                        const userDoc = snapshot.docs[0];
+                        displayWalletUserDetails({ id: userDoc.id, ...userDoc.data() });
                     } else {
-                        // Search by userId
-                        userDoc = await db.collection('users').doc(searchTerm).get();
+                        handleUserNotFound();
                     }
-                    
-                    if (userDoc && (userDoc.exists || userDoc.data)) {
-                        const userData = userDoc.data ? userDoc.data() : userDoc;
-                        currentWalletUser = {
-                            id: userDoc.id || searchTerm,
-                            ...userData
-                        };
-                        
-                        // Display user details
-                        dom.walletUserId.textContent = currentWalletUser.id;
-                        dom.walletTelegramInfo.textContent = `${currentWalletUser.telegramUsername || 'N/A'} (${currentWalletUser.telegramId || 'N/A'})`;
-                        dom.walletUserName.textContent = `${currentWalletUser.firstName || ''} ${currentWalletUser.lastName || ''}`.trim() || 'N/A';
-                        dom.currentCsBalance.textContent = `${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS`;
-                        dom.currentUsdBalance.textContent = `$${currentWalletUser.usdBalance ? currentWalletUser.usdBalance.toFixed(2) : '0.00'}`;
-                        dom.currentHashPower.textContent = `${currentWalletUser.hashPower || 10} H/s`;
-                        
-                        dom.walletUserDetails.style.display = 'block';
-                        showNotification('User found successfully!', 'success');
-                    } else {
-                        showNotification('User not found', 'error');
-                        dom.walletUserDetails.style.display = 'none';
-                    }
-                } catch (error) {
-                    console.error('Error searching user:', error);
-                    showNotification('Error searching user', 'error');
+                }, handleSnapshotError);
+            };
+            
+            // Helper function to display user details
+            const displayWalletUserDetails = (userData) => {
+                currentWalletUser = userData;
+                
+                dom.walletUserId.textContent = currentWalletUser.id;
+                dom.walletTelegramInfo.textContent = `${currentWalletUser.telegramUsername || 'N/A'} (${currentWalletUser.telegramId || 'N/A'})`;
+                dom.walletUserName.textContent = `${currentWalletUser.firstName || ''} ${currentWalletUser.lastName || ''}`.trim() || 'N/A';
+                dom.currentCsBalance.textContent = `${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS`;
+                dom.currentUsdBalance.textContent = `$${currentWalletUser.usdBalance ? currentWalletUser.usdBalance.toFixed(2) : '0.00'}`;
+                dom.currentHashPower.textContent = `${currentWalletUser.hashPower || 10} H/s`;
+                
+                dom.walletUserDetails.style.display = 'block';
+                console.log("User data updated in real-time.");
+            };
+
+            // Helper function to handle when user is not found
+            const handleUserNotFound = () => {
+                showNotification('User not found', 'error');
+                dom.walletUserDetails.style.display = 'none';
+                if (userListener) {
+                    userListener(); // Stop listening if user is not found
+                    userListener = null;
+                }
+            };
+            
+            // Helper function to handle snapshot errors
+            const handleSnapshotError = (error) => {
+                console.error('Error listening to user data:', error);
+                showNotification('Error fetching user data', 'error');
+                if (userListener) {
+                    userListener();
+                    userListener = null;
                 }
             };
 
