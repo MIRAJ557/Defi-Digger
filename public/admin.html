@@ -448,6 +448,20 @@
             transform: translateX(0);
         }
 
+        /* User Info Styles */
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .user-info strong {
+            color: var(--accent);
+            font-size: 14px;
+        }
+        .user-info small {
+            color: #888;
+            font-size: 12px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .stats-grid {
@@ -550,7 +564,7 @@
                 <!-- Users Tab -->
                 <div class="tab-content active" id="users-tab">
                     <div class="search-container">
-                        <input type="text" id="user-search" class="search-box" placeholder="Search users by ID, name, or email">
+                        <input type="text" id="user-search" class="search-box" placeholder="Search by Telegram ID, Username, Email, Name, Phone...">
                         <select id="user-filter" class="filter-select">
                             <option value="all">All Users</option>
                             <option value="active">Active</option>
@@ -562,12 +576,12 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>User ID</th>
+                                    <th>Telegram Info</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
                                     <th>CS Balance</th>
                                     <th>USD Balance</th>
-                                    <th>Hash Power</th>
-                                    <th>Level</th>
-                                    <th>Referrals</th>
                                     <th>Joined</th>
                                     <th>Actions</th>
                                 </tr>
@@ -600,6 +614,7 @@
                                 <tr>
                                     <th>Request ID</th>
                                     <th>User ID</th>
+                                    <th>Telegram Info</th>
                                     <th>Amount</th>
                                     <th>Transaction Hash</th>
                                     <th>Status</th>
@@ -635,6 +650,7 @@
                                 <tr>
                                     <th>Request ID</th>
                                     <th>User ID</th>
+                                    <th>Telegram Info</th>
                                     <th>Amount</th>
                                     <th>USDT Address</th>
                                     <th>Status</th>
@@ -657,7 +673,7 @@
                     <h3 style="margin-bottom: 20px;">User Wallet Management</h3>
                     
                     <div class="search-container">
-                        <input type="text" id="wallet-user-search" class="search-box" placeholder="Search user by ID">
+                        <input type="text" id="wallet-user-search" class="search-box" placeholder="Search user by Telegram ID, Username, or User ID">
                         <button id="search-wallet-user" class="btn"><i class="fas fa-search"></i> Search User</button>
                     </div>
                     
@@ -669,6 +685,9 @@
                                     <strong>User ID:</strong> <span id="wallet-user-id"></span>
                                 </div>
                                 <div>
+                                    <strong>Telegram:</strong> <span id="wallet-telegram-info"></span>
+                                </div>
+                                <div>
                                     <strong>Current CS Balance:</strong> <span id="current-cs-balance">0.0000 CS</span>
                                 </div>
                                 <div>
@@ -676,6 +695,9 @@
                                 </div>
                                 <div>
                                     <strong>Hash Power:</strong> <span id="current-hash-power">0 H/s</span>
+                                </div>
+                                <div>
+                                    <strong>Name:</strong> <span id="wallet-user-name">N/A</span>
                                 </div>
                             </div>
                             
@@ -717,6 +739,7 @@
                                     <tr>
                                         <th>Date</th>
                                         <th>User ID</th>
+                                        <th>Telegram</th>
                                         <th>CS Change</th>
                                         <th>USD Change</th>
                                         <th>Hash Change</th>
@@ -990,6 +1013,8 @@
                 walletUserSearch: document.getElementById('wallet-user-search'),
                 walletUserDetails: document.getElementById('wallet-user-details'),
                 walletUserId: document.getElementById('wallet-user-id'),
+                walletTelegramInfo: document.getElementById('wallet-telegram-info'),
+                walletUserName: document.getElementById('wallet-user-name'),
                 currentCsBalance: document.getElementById('current-cs-balance'),
                 currentUsdBalance: document.getElementById('current-usd-balance'),
                 currentHashPower: document.getElementById('current-hash-power'),
@@ -1017,6 +1042,7 @@
             let currentWalletUser = null;
             let settings = {};
             let packages = [];
+            let allUsers = [];
             
             // Pagination variables
             const itemsPerPage = 10;
@@ -1244,16 +1270,30 @@
             const loadUsers = async () => {
     try {
         const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-        const users = [];
+        allUsers = [];
         
         usersSnapshot.forEach(doc => {
-            users.push({
+            const userData = doc.data();
+            allUsers.push({
                 id: doc.id,
-                ...doc.data()
+                email: userData.email || 'N/A',
+                telegramId: userData.telegramId || 'N/A',
+                telegramUsername: userData.telegramUsername || 'N/A',
+                firstName: userData.firstName || 'N/A',
+                lastName: userData.lastName || 'N/A',
+                phone: userData.phone || 'N/A',
+                balance: userData.balance || 0,
+                csBalance: userData.csBalance || 0,
+                usdBalance: userData.usdBalance || 0,
+                hashPower: userData.hashPower || 10,
+                userLevel: userData.userLevel || 1,
+                referralCount: userData.referralCount || 0,
+                createdAt: userData.createdAt || '',
+                ...userData
             });
         });
         
-        filteredUsers = users;
+        filteredUsers = [...allUsers];
         currentUsersPage = 1;
         displayUsers();
         generatePagination(filteredUsers.length, currentUsersPage, 'users');
@@ -1275,12 +1315,17 @@
                     const row = document.createElement('tr');
                     
                     row.innerHTML = `
-                        <td>${user.id}</td>
+                        <td>
+                            <div class="user-info">
+                                <strong>${user.telegramUsername}</strong>
+                                <small>ID: ${user.telegramId}</small>
+                            </div>
+                        </td>
+                        <td>${user.firstName} ${user.lastName}</td>
+                        <td>${user.email}</td>
+                        <td>${user.phone}</td>
                         <td>${user.csBalance ? user.csBalance.toFixed(4) : '0.0000'} CS</td>
                         <td>$${user.usdBalance ? user.usdBalance.toFixed(2) : '0.00'}</td>
-                        <td>${user.hashPower || 10} H/s</td>
-                        <td>${user.userLevel || 1}</td>
-                        <td>${user.referralCount || 0}</td>
                         <td>${user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
                         <td>
                             <button class="btn btn-warning view-user" data-user-id="${user.id}">View</button>
@@ -1304,8 +1349,16 @@
                 const searchTerm = dom.userSearch.value.toLowerCase();
                 const filterValue = dom.userFilter.value;
                 
-                filteredUsers = filteredUsers.filter(user => {
-                    const matchesSearch = user.id.toLowerCase().includes(searchTerm);
+                filteredUsers = allUsers.filter(user => {
+                    const matchesSearch = 
+                        user.id.toLowerCase().includes(searchTerm) ||
+                        (user.telegramId && user.telegramId.toLowerCase().includes(searchTerm)) ||
+                        (user.telegramUsername && user.telegramUsername.toLowerCase().includes(searchTerm)) ||
+                        (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                        (user.firstName && user.firstName.toLowerCase().includes(searchTerm)) ||
+                        (user.lastName && user.lastName.toLowerCase().includes(searchTerm)) ||
+                        (user.phone && user.phone.includes(searchTerm));
+                    
                     let matchesFilter = true;
                     
                     if (filterValue === 'active') {
@@ -1333,6 +1386,21 @@
                         dom.userDetails.innerHTML = `
                             <div style="margin-bottom: 15px;">
                                 <strong>User ID:</strong> ${userId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Telegram ID:</strong> ${user.telegramId || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Telegram Username:</strong> ${user.telegramUsername || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Name:</strong> ${user.firstName || ''} ${user.lastName || ''}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Email:</strong> ${user.email || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Phone:</strong> ${user.phone || 'N/A'}
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <strong>CS Balance:</strong> ${user.csBalance ? user.csBalance.toFixed(4) : '0.0000'} CS
@@ -1383,6 +1451,21 @@
                         });
                     });
                     
+                    // Get user details for each deposit
+                    for (let deposit of deposits) {
+                        try {
+                            const userDoc = await db.collection('users').doc(deposit.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                deposit.telegramId = userData.telegramId || 'N/A';
+                                deposit.telegramUsername = userData.telegramUsername || 'N/A';
+                                deposit.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'N/A';
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user data for deposit:', error);
+                        }
+                    }
+                    
                     filteredDeposits = deposits;
                     displayDeposits();
                     generatePagination(deposits.length, currentDepositsPage, 'deposits');
@@ -1406,6 +1489,12 @@
                     row.innerHTML = `
                         <td>${deposit.id}</td>
                         <td>${deposit.userId}</td>
+                        <td>
+                            <div class="user-info">
+                                <strong>${deposit.telegramUsername}</strong>
+                                <small>ID: ${deposit.telegramId}</small>
+                            </div>
+                        </td>
                         <td>$${deposit.amount.toFixed(2)}</td>
                         <td>${deposit.transactionHash || 'N/A'}</td>
                         <td><span class="status-badge status-${deposit.status}">${deposit.status}</span></td>
@@ -1433,8 +1522,11 @@
                 const filterValue = dom.depositFilter.value;
                 
                 filteredDeposits = filteredDeposits.filter(deposit => {
-                    const matchesSearch = deposit.userId.toLowerCase().includes(searchTerm) || 
-                                         (deposit.transactionHash && deposit.transactionHash.toLowerCase().includes(searchTerm));
+                    const matchesSearch = 
+                        deposit.userId.toLowerCase().includes(searchTerm) || 
+                        (deposit.transactionHash && deposit.transactionHash.toLowerCase().includes(searchTerm)) ||
+                        (deposit.telegramId && deposit.telegramId.toLowerCase().includes(searchTerm)) ||
+                        (deposit.telegramUsername && deposit.telegramUsername.toLowerCase().includes(searchTerm));
                     const matchesFilter = filterValue === 'all' || deposit.status === filterValue;
                     
                     return matchesSearch && matchesFilter;
@@ -1454,12 +1546,32 @@
                         const deposit = depositDoc.data();
                         currentDeposit = { id: depositId, ...deposit };
                         
+                        // Get user details
+                        let userInfo = 'N/A';
+                        try {
+                            const userDoc = await db.collection('users').doc(deposit.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                userInfo = `
+                                    <strong>Telegram:</strong> ${userData.telegramUsername || 'N/A'} (${userData.telegramId || 'N/A'})<br>
+                                    <strong>Name:</strong> ${userData.firstName || ''} ${userData.lastName || ''}<br>
+                                    <strong>Email:</strong> ${userData.email || 'N/A'}<br>
+                                    <strong>Phone:</strong> ${userData.phone || 'N/A'}
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user details:', error);
+                        }
+                        
                         dom.depositDetails.innerHTML = `
                             <div style="margin-bottom: 15px;">
                                 <strong>Request ID:</strong> ${depositId}
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <strong>User ID:</strong> ${deposit.userId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>User Details:</strong><br>${userInfo}
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <strong>Amount:</strong> $${deposit.amount.toFixed(2)}
@@ -1557,6 +1669,21 @@
                         });
                     });
                     
+                    // Get user details for each withdrawal
+                    for (let withdrawal of withdrawals) {
+                        try {
+                            const userDoc = await db.collection('users').doc(withdrawal.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                withdrawal.telegramId = userData.telegramId || 'N/A';
+                                withdrawal.telegramUsername = userData.telegramUsername || 'N/A';
+                                withdrawal.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'N/A';
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user data for withdrawal:', error);
+                        }
+                    }
+                    
                     filteredWithdrawals = withdrawals;
                     displayWithdrawals();
                     generatePagination(withdrawals.length, currentWithdrawalsPage, 'withdrawals');
@@ -1580,6 +1707,12 @@
                     row.innerHTML = `
                         <td>${withdrawal.id}</td>
                         <td>${withdrawal.userId}</td>
+                        <td>
+                            <div class="user-info">
+                                <strong>${withdrawal.telegramUsername}</strong>
+                                <small>ID: ${withdrawal.telegramId}</small>
+                            </div>
+                        </td>
                         <td>$${withdrawal.amount.toFixed(2)}</td>
                         <td>${withdrawal.usdtAddress}</td>
                         <td><span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span></td>
@@ -1607,8 +1740,11 @@
                 const filterValue = dom.withdrawalFilter.value;
                 
                 filteredWithdrawals = filteredWithdrawals.filter(withdrawal => {
-                    const matchesSearch = withdrawal.userId.toLowerCase().includes(searchTerm) || 
-                                         withdrawal.usdtAddress.toLowerCase().includes(searchTerm);
+                    const matchesSearch = 
+                        withdrawal.userId.toLowerCase().includes(searchTerm) || 
+                        withdrawal.usdtAddress.toLowerCase().includes(searchTerm) ||
+                        (withdrawal.telegramId && withdrawal.telegramId.toLowerCase().includes(searchTerm)) ||
+                        (withdrawal.telegramUsername && withdrawal.telegramUsername.toLowerCase().includes(searchTerm));
                     const matchesFilter = filterValue === 'all' || withdrawal.status === filterValue;
                     
                     return matchesSearch && matchesFilter;
@@ -1628,12 +1764,32 @@
                         const withdrawal = withdrawalDoc.data();
                         currentWithdrawal = { id: withdrawalId, ...withdrawal };
                         
+                        // Get user details
+                        let userInfo = 'N/A';
+                        try {
+                            const userDoc = await db.collection('users').doc(withdrawal.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                userInfo = `
+                                    <strong>Telegram:</strong> ${userData.telegramUsername || 'N/A'} (${userData.telegramId || 'N/A'})<br>
+                                    <strong>Name:</strong> ${userData.firstName || ''} ${userData.lastName || ''}<br>
+                                    <strong>Email:</strong> ${userData.email || 'N/A'}<br>
+                                    <strong>Phone:</strong> ${userData.phone || 'N/A'}
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user details:', error);
+                        }
+                        
                         dom.withdrawalDetails.innerHTML = `
                             <div style="margin-bottom: 15px;">
                                 <strong>Request ID:</strong> ${withdrawalId}
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <strong>User ID:</strong> ${withdrawal.userId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>User Details:</strong><br>${userInfo}
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <strong>Amount:</strong> $${withdrawal.amount.toFixed(2)}
@@ -1734,23 +1890,50 @@
 
             // Search user for wallet management
             const searchWalletUser = async () => {
-                const userId = dom.walletUserSearch.value.trim();
-                if (!userId) {
-                    showNotification('Please enter a user ID', 'error');
+                const searchTerm = dom.walletUserSearch.value.trim();
+                if (!searchTerm) {
+                    showNotification('Please enter a user ID, Telegram ID, or Username', 'error');
                     return;
                 }
 
                 try {
-                    const userDoc = await db.collection('users').doc(userId).get();
+                    let userDoc;
                     
-                    if (userDoc.exists) {
+                    // Try to find user by different identifiers
+                    if (searchTerm.startsWith('tg_')) {
+                        // Search by telegramId
+                        const usersSnapshot = await db.collection('users')
+                            .where('telegramId', '==', searchTerm)
+                            .get();
+                        
+                        if (!usersSnapshot.empty) {
+                            userDoc = usersSnapshot.docs[0];
+                        }
+                    } else if (searchTerm.includes('@')) {
+                        // Search by telegramUsername
+                        const usersSnapshot = await db.collection('users')
+                            .where('telegramUsername', '==', searchTerm)
+                            .get();
+                        
+                        if (!usersSnapshot.empty) {
+                            userDoc = usersSnapshot.docs[0];
+                        }
+                    } else {
+                        // Search by userId
+                        userDoc = await db.collection('users').doc(searchTerm).get();
+                    }
+                    
+                    if (userDoc && (userDoc.exists || userDoc.data)) {
+                        const userData = userDoc.data ? userDoc.data() : userDoc;
                         currentWalletUser = {
-                            id: userId,
-                            ...userDoc.data()
+                            id: userDoc.id || searchTerm,
+                            ...userData
                         };
                         
                         // Display user details
-                        dom.walletUserId.textContent = userId;
+                        dom.walletUserId.textContent = currentWalletUser.id;
+                        dom.walletTelegramInfo.textContent = `${currentWalletUser.telegramUsername || 'N/A'} (${currentWalletUser.telegramId || 'N/A'})`;
+                        dom.walletUserName.textContent = `${currentWalletUser.firstName || ''} ${currentWalletUser.lastName || ''}`.trim() || 'N/A';
                         dom.currentCsBalance.textContent = `${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS`;
                         dom.currentUsdBalance.textContent = `$${currentWalletUser.usdBalance ? currentWalletUser.usdBalance.toFixed(2) : '0.00'}`;
                         dom.currentHashPower.textContent = `${currentWalletUser.hashPower || 10} H/s`;
@@ -1798,6 +1981,9 @@
                 dom.walletConfirmDetails.innerHTML = `
                     <div style="margin-bottom: 15px;">
                         <strong>User ID:</strong> ${currentWalletUser.id}
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>Telegram:</strong> ${currentWalletUser.telegramUsername || 'N/A'} (${currentWalletUser.telegramId || 'N/A'})
                     </div>
                     <div style="margin-bottom: 15px;">
                         <strong>CS Balance:</strong> ${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS 
@@ -1850,6 +2036,8 @@
                     // Record adjustment in history
                     await db.collection('walletAdjustments').add({
                         userId: currentWalletUser.id,
+                        telegramId: currentWalletUser.telegramId,
+                        telegramUsername: currentWalletUser.telegramUsername,
                         adminId: currentUser.uid,
                         csChange: csChange,
                         usdChange: usdChange,
@@ -1926,7 +2114,7 @@
                     if (historySnapshot.empty) {
                         dom.walletHistoryTableBody.innerHTML = `
                             <tr>
-                                <td colspan="7" style="text-align: center; opacity: 0.7;">No wallet adjustments yet</td>
+                                <td colspan="8" style="text-align: center; opacity: 0.7;">No wallet adjustments yet</td>
                             </tr>
                         `;
                         return;
@@ -1939,6 +2127,7 @@
                         row.innerHTML = `
                             <td>${adjustment.timestamp ? new Date(adjustment.timestamp.seconds * 1000).toLocaleString() : 'N/A'}</td>
                             <td>${adjustment.userId}</td>
+                            <td>${adjustment.telegramUsername || 'N/A'} (${adjustment.telegramId || 'N/A'})</td>
                             <td style="color: ${adjustment.csChange >= 0 ? 'var(--success)' : 'var(--danger)'}">
                                 ${adjustment.csChange > 0 ? '+' : ''}${adjustment.csChange.toFixed(4)} CS
                             </td>
@@ -1959,7 +2148,7 @@
                     console.error('Error loading wallet adjustment history:', error);
                     dom.walletHistoryTableBody.innerHTML = `
                         <tr>
-                            <td colspan="7" style="text-align: center; color: var(--danger);">Error loading history</td>
+                            <td colspan="8" style="text-align: center; color: var(--danger);">Error loading history</td>
                         </tr>
                     `;
                 }
@@ -2130,85 +2319,70 @@
                 }
             };
 
-            // Generate pagination
-            const generatePagination = (totalItems, currentPage, type) => {
-                const totalPages = Math.ceil(totalItems / itemsPerPage);
-                let paginationContainer;
-                
-                if (type === 'users') {
-                    paginationContainer = dom.usersPagination;
-                } else if (type === 'deposits') {
-                    paginationContainer = dom.depositsPagination;
-                } else if (type === 'withdrawals') {
-                    paginationContainer = dom.withdrawalsPagination;
-                } else {
-                    return;
-                }
-                
-                paginationContainer.innerHTML = '';
-                
-                // Previous button
-                const prevButton = document.createElement('button');
-                prevButton.className = 'page-btn';
-                prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
-                prevButton.disabled = currentPage === 1;
-                prevButton.addEventListener('click', () => {
-                    if (type === 'users') {
-                        currentUsersPage--;
-                        displayUsers();
-                    } else if (type === 'deposits') {
-                        currentDepositsPage--;
-                        displayDeposits();
-                    } else if (type === 'withdrawals') {
-                        currentWithdrawalsPage--;
-                        displayWithdrawals();
-                    }
-                    generatePagination(totalItems, currentPage - 1, type);
-                });
-                paginationContainer.appendChild(prevButton);
-                
-                // Page numbers
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageButton = document.createElement('button');
-                    pageButton.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                    pageButton.textContent = i;
-                    pageButton.addEventListener('click', () => {
-                        if (type === 'users') {
-                            currentUsersPage = i;
-                            displayUsers();
-                        } else if (type === 'deposits') {
-                            currentDepositsPage = i;
-                            displayDeposits();
-                        } else if (type === 'withdrawals') {
-                            currentWithdrawalsPage = i;
-                            displayWithdrawals();
-                        }
-                        generatePagination(totalItems, i, type);
-                    });
-                    paginationContainer.appendChild(pageButton);
-                }
-                
-                // Next button
-                const nextButton = document.createElement('button');
-                nextButton.className = 'page-btn';
-                nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
-                nextButton.disabled = currentPage === totalPages;
-                nextButton.addEventListener('click', () => {
-                    if (type === 'users') {
-                        currentUsersPage++;
-                        displayUsers();
-                    } else if (type === 'deposits') {
-                        currentDepositsPage++;
-                        displayDeposits();
-                    } else if (type === 'withdrawals') {
-                        currentWithdrawalsPage++;
-                        displayWithdrawals();
-                    }
-                    generatePagination(totalItems, currentPage + 1, type);
-                });
-                paginationContainer.appendChild(nextButton);
-            };
+// Generate pagination
+// Helper function to handle page change
+const handlePageChange = (newPage, type) => {
+    if (type === 'users') {
+        currentUsersPage = newPage;
+        displayUsers(); // displayUsers ফাংশনটি নতুন ডেটা দেখানোর পর generatePagination কল করবে
+    } else if (type === 'deposits') {
+        currentDepositsPage = newPage;
+        displayDeposits(); // displayDeposits ফাংশনটি নতুন ডেটা দেখানোর পর generatePagination কল করবে
+    } else if (type === 'withdrawals') {
+        currentWithdrawalsPage = newPage;
+        displayWithdrawals(); // displayWithdrawals ফাংশনটি নতুন ডেটা দেখানোর পর generatePagination কল করবে
+    }
+};
 
+const generatePagination = (totalItems, currentPage, type) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    let paginationContainer;
+
+    if (type === 'users') {
+        paginationContainer = dom.usersPagination;
+    } else if (type === 'deposits') {
+        paginationContainer = dom.depositsPagination;
+    } else if (type === 'withdrawals') {
+        paginationContainer = dom.withdrawalsPagination;
+    } else {
+        return;
+    }
+
+    paginationContainer.innerHTML = '';
+
+    if (totalPages <= 1) return; // যদি একটির বেশি পৃষ্ঠা না থাকে তবে পেজিনেশন দেখানোর দরকার নেই
+
+    // Previous button
+    const prevButton = document.createElement('button');
+    prevButton.className = 'page-btn';
+    prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener('click', () => {
+        handlePageChange(currentPage - 1, type);
+    });
+    paginationContainer.appendChild(prevButton);
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+        pageButton.textContent = i;
+        pageButton.addEventListener('click', () => {
+            handlePageChange(i, type);
+        });
+        paginationContainer.appendChild(pageButton);
+    }
+
+    // Next button
+    const nextButton = document.createElement('button');
+    nextButton.className = 'page-btn';
+    nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.addEventListener('click', () => {
+        handlePageChange(currentPage + 1, type);
+    });
+    paginationContainer.appendChild(nextButton);
+};
             // Show notification
             const showNotification = (message, type = 'success') => {
                 dom.notificationText.textContent = message;
