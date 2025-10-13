@@ -1892,33 +1892,47 @@
             let userListener = null;
 
             // Search user for wallet management (Real-time version)
-            const searchWalletUser = () => {
+           const searchWalletUser = () => {
                 const searchTerm = dom.walletUserSearch.value.trim();
                 if (!searchTerm) {
                     showNotification('Please enter a user ID, Telegram ID, or Username', 'error');
                     return;
                 }
 
-                // If there's an old listener, unsubscribe from it first to prevent multiple listeners
+                // যদি আগের কোনো রিয়েল-টাইম লিসেনার চালু থাকে, তবে সেটি বন্ধ করে দেওয়া হচ্ছে
                 if (userListener) {
-                    userListener(); // This stops the old real-time updates
+                    userListener(); 
                 }
 
-                let query;
+                let finalDocId = null;
+                let query = null;
+
+                // নতুন এবং উন্নত সার্চ লজিক:
+                // ১. যদি সার্চ টার্মটি শুধুমাত্র সংখ্যা হয় (যেমন: 123456789)
+                if (/^\d+$/.test(searchTerm)) {
+                    finalDocId = `tg_${searchTerm}`;
+                    console.log(`Searching by constructed Telegram Document ID: ${finalDocId}`);
                 
-                // Try to find user by different identifiers
-                if (searchTerm.startsWith('tg_')) {
-                    // Search by telegramId
-                    query = db.collection('users').where('telegramId', '==', searchTerm);
-                } else if (searchTerm.includes('@')) {
-                    // Search by telegramUsername
+                // ২. যদি সার্চ টার্ম 'tg_' দিয়ে শুরু হয় (সম্পূর্ণ ডকুমেন্ট আইডি)
+                } else if (searchTerm.startsWith('tg_')) {
+                    finalDocId = searchTerm;
+                    console.log(`Searching by full Document ID: ${finalDocId}`);
+
+                // ৩. যদি সার্চ টার্ম '@' দিয়ে শুরু হয় বা কোনো স্পেস না থাকে (ইউজারনেম)
+                } else if (searchTerm.startsWith('@') || !searchTerm.includes(' ')) {
                     const username = searchTerm.startsWith('@') ? searchTerm.substring(1) : searchTerm;
                     query = db.collection('users').where('telegramUsername', '==', username);
+                    console.log(`Searching by username: ${username}`);
+                
+                // ৪. অন্যথায়, এটিকে পুরানো Firebase UID হিসেবে খোঁজার চেষ্টা করা হবে (ফলব্যাক)
                 } else {
-                    // Default search by Firebase User ID (document ID)
-                    const userDocRef = db.collection('users').doc(searchTerm);
-                    
-                    // For a single document, we listen directly to it
+                    finalDocId = searchTerm;
+                    console.log(`Fallback search by old Firebase UID: ${finalDocId}`);
+                }
+
+                // যদি আমরা সরাসরি ডকুমেন্ট আইডি পেয়ে যাই (টেলিগ্রাম আইডি থেকে)
+                if (finalDocId) {
+                    const userDocRef = db.collection('users').doc(finalDocId);
                     userListener = userDocRef.onSnapshot((doc) => {
                         if (doc.exists) {
                             displayWalletUserDetails({ id: doc.id, ...doc.data() });
@@ -1926,19 +1940,20 @@
                             handleUserNotFound();
                         }
                     }, handleSnapshotError);
-                    return; // Exit function since we've started the listener
+                    return; // ফাংশন এখানেই শেষ
                 }
 
-                // For queries, we listen to the query result
-                userListener = query.onSnapshot((snapshot) => {
-                    if (!snapshot.empty) {
-                        // Assuming the first result is the correct one
-                        const userDoc = snapshot.docs[0];
-                        displayWalletUserDetails({ id: userDoc.id, ...userDoc.data() });
-                    } else {
-                        handleUserNotFound();
-                    }
-                }, handleSnapshotError);
+                // যদি ইউজারনেম দিয়ে খুঁজতে হয়
+                if (query) {
+                    userListener = query.onSnapshot((snapshot) => {
+                        if (!snapshot.empty) {
+                            const userDoc = snapshot.docs[0]; // প্রথম ফলাফলটি দেখানো হচ্ছে
+                            displayWalletUserDetails({ id: userDoc.id, ...userDoc.data() });
+                        } else {
+                            handleUserNotFound();
+                        }
+                    }, handleSnapshotError);
+                }
             };
             
             // Helper function to display user details
