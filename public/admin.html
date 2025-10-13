@@ -1146,37 +1146,43 @@
                 setupWalletManagement();
             };
 
-            // Handle login
-            const handleLogin = () => {
+         // --- নতুন এবং সঠিক handleLogin ফাংশন ---
+            const handleLogin = async () => {
                 const email = dom.adminEmail.value;
                 const password = dom.adminPassword.value;
                 
                 dom.loginError.style.display = 'none';
 
-                auth.signInWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        // Check if user is admin
-                        const user = userCredential.user;
-                        
-                        // Simple admin check
-                        if (email.includes('admin') || email === 'admin@coinswitch.com') {
-                            currentUser = user;
-                            showNotification('Admin login successful!', 'success');
-                            showAdminPanel();
-                            loadData();
-                        } else {
-                            // Not an admin, sign out
-                            auth.signOut();
-                            dom.loginError.textContent = 'Access denied. Admin only.';
-                            dom.loginError.style.display = 'block';
-                            showNotification('Admin access required', 'error');
-                        }
-                    })
-                    .catch((error) => {
-                        dom.loginError.textContent = error.message;
+                try {
+                    // ধাপ ১: প্রথমে ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করানো
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    // ধাপ ২: লগইন সফল হলে, Firestore-এর 'admins' কালেকশনে চেক করা
+                    const adminDocRef = db.collection('admins').doc(user.uid);
+                    const adminDoc = await adminDocRef.get();
+
+                    // ধাপ ৩: চেক করা হচ্ছে ডকুমেন্টটি আছে কিনা এবং তার ভেতরে isAdmin ফিল্ডটি true কিনা
+                    if (adminDoc.exists && adminDoc.data().isAdmin === true) {
+                        // যদি ইউজারটি অ্যাডমিন হয়
+                        currentUser = user;
+                        showNotification('Admin login successful!', 'success');
+                        showAdminPanel();
+                        loadData();
+                    } else {
+                        // যদি ইউজারটি অ্যাডমিন না হয়
+                        auth.signOut(); // তাকে আবার সাইন আউট করে দেওয়া হচ্ছে
+                        dom.loginError.textContent = 'Access denied. You are not an admin.';
                         dom.loginError.style.display = 'block';
-                        showNotification('Login failed. Check credentials.', 'error');
-                    });
+                        showNotification('Admin access required', 'error');
+                    }
+                } catch (error) {
+                    // যদি ইমেইল/পাসওয়ার্ড ভুল হয় বা অন্য কোনো সমস্যা হয়
+                    dom.loginError.textContent = 'Invalid credentials. Please try again.';
+                    dom.loginError.style.display = 'block';
+                    showNotification('Login failed. Check credentials.', 'error');
+                    console.error('Login Error:', error);
+                }
             };
 
             // Handle logout
