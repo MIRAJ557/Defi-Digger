@@ -1304,7 +1304,7 @@
 };
 
             // Display users in table
-            const displayUsers = () => {
+const displayUsers = () => {
                 dom.usersTableBody.innerHTML = '';
                 
                 const startIndex = (currentUsersPage - 1) * itemsPerPage;
@@ -1314,16 +1314,17 @@
                     const user = filteredUsers[i];
                     const row = document.createElement('tr');
                     
+                    // টেবিলের কলাম আপডেট করা হলো
                     row.innerHTML = `
                         <td>
                             <div class="user-info">
-                                <strong>${user.telegramUsername}</strong>
-                                <small>ID: ${user.telegramId}</small>
+                                <strong>${user.telegramUsername || 'N/A'}</strong>
+                                <small>ID: ${user.telegramId || user.id}</small>
                             </div>
                         </td>
-                        <td>${user.firstName} ${user.lastName}</td>
-                        <td>${user.email}</td>
-                        <td>${user.phone}</td>
+                        <td>${user.firstName || ''} ${user.lastName || ''}</td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td>${user.phone || 'N/A'}</td>
                         <td>${user.csBalance ? user.csBalance.toFixed(4) : '0.0000'} CS</td>
                         <td>$${user.usdBalance ? user.usdBalance.toFixed(2) : '0.00'}</td>
                         <td>${user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
@@ -1335,7 +1336,6 @@
                     dom.usersTableBody.appendChild(row);
                 }
                 
-                // Add event listeners to view buttons
                 document.querySelectorAll('.view-user').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const userId = btn.getAttribute('data-user-id');
@@ -1343,7 +1343,6 @@
                     });
                 });
             };
-
             // Filter users
             const filterUsers = () => {
                 const searchTerm = dom.userSearch.value.toLowerCase();

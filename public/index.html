@@ -1427,7 +1427,7 @@
                 return null;
             };
 
-            const loadUserData = async () => {
+           const loadUserData = async () => {
                 try {
                     updateLoadingProgress(40, 'Loading user data...');
                     
@@ -1435,48 +1435,67 @@
                         throw new Error("User ID not available");
                     }
 
-                    const userDoc = await db.collection('users').doc(state.userId).get();
+                    const userDocRef = db.collection('users').doc(state.userId);
+                    const userDoc = await userDocRef.get();
+                    const telegramUser = tg.initDataUnsafe.user;
                     
                     if (userDoc.exists) {
-                        console.log("User data found in Firebase");
+                        // --- পুরাতন ব্যবহারকারীর জন্য ---
+                        console.log("Existing user data found.");
                         const userData = userDoc.data();
                         Object.assign(state, userData);
-                        
-                        // Offline earnings calculation...
+
+                        // --- নতুন সংযোজন: প্রোফাইল তথ্য অটো-আপডেট ---
+                        const updates = {};
+                        let needsUpdate = false;
+
+                        if (userData.telegramUsername !== (telegramUser.username || 'N/A')) {
+                            updates.telegramUsername = telegramUser.username || 'N/A';
+                            needsUpdate = true;
+                        }
+                        if (userData.firstName !== (telegramUser.first_name || '')) {
+                            updates.firstName = telegramUser.first_name || '';
+                            needsUpdate = true;
+                        }
+                        if (userData.lastName !== (telegramUser.last_name || '')) {
+                            updates.lastName = telegramUser.last_name || '';
+                            needsUpdate = true;
+                        }
+                        if (!userData.telegramId) {
+                            updates.telegramId = state.userId;
+                            needsUpdate = true;
+                        }
+
+                        if (needsUpdate) {
+                            console.log("User profile data is outdated. Updating now...", updates);
+                            await userDocRef.update(updates);
+                            // state অবজেক্টও আপডেট করে দেওয়া হলো
+                            Object.assign(state, updates); 
+                        }
+                        // --- অটো-আপডেট শেষ ---
+
+                        // Offline earnings calculation... (আগের মতোই)
                         const now = Date.now();
                         if (state.lastPassiveUpdate && typeof state.lastPassiveUpdate === 'number') {
                             const timePassedInSeconds = (now - state.lastPassiveUpdate) / 1000;
-                            
                             if (timePassedInSeconds > 1 && timePassedInSeconds < 604800) {
                                 const hourlyCsGain = state.hashPower * CONFIG.HASH_TO_CS_PER_HOUR;
                                 const hourlyUsdGain = state.dailyUsdReward / 24;
-                                
                                 const csGained = (hourlyCsGain / 3600) * timePassedInSeconds;
                                 const usdGained = (hourlyUsdGain / 3600) * timePassedInSeconds;
-                                
                                 state.csBalance += csGained;
-                                if (usdGained > 0) {
-                                    state.usdBalance += usdGained;
-                                }
-                                
-                                // Transactions add করুন
-                                if (csGained > 0.001) {
-                                    addTransaction('passive_cs', csGained, 'Passive CS Mining');
-                                }
-                                if (usdGained > 0.001) {
-                                    addTransaction('passive_usd', usdGained, 'Passive USD Earnings');
-                                }
+                                if (usdGained > 0) state.usdBalance += usdGained;
+                                if (csGained > 0.001) addTransaction('passive_cs', csGained, 'Passive CS Mining');
+                                if (usdGained > 0.001) addTransaction('passive_usd', usdGained, 'Passive USD Earnings');
                             }
                         }
-                        
                         state.lastPassiveUpdate = now;
-                    } else {
-                        // NEW USER - Create default data
-                        console.log("Creating new user with Firebase UID:", state.userId);
-                        
-                        const telegramUser = tg.initDataUnsafe.user;
 
-                        state.csBalance = 10; // Starting bonus
+                    } else {
+                        // --- নতুন ব্যবহারকারীর জন্য ---
+                        console.log("Creating new user with Telegram data:", state.userId);
+                        
+                        state.csBalance = 10;
                         state.usdBalance = 0;
                         state.hashPower = 10;
                         state.dailyUsdReward = 0;
@@ -1490,20 +1509,15 @@
                         state.transactions = [];
                         state.referredBy = null;
                         
-                        // --- নতুন লাইন যোগ করা হয়েছে ---
-                        if (telegramUser && telegramUser.id) {
-                            state.telegramId = "tg_" + telegramUser.id;
-                            state.telegramUsername = telegramUser.username || 'N/A';
-                        }
+                        // টেলিগ্রাম থেকে পাওয়া সকল তথ্য যোগ করা হচ্ছে
+                        state.telegramId = state.userId;
+                        state.telegramUsername = telegramUser.username || 'N/A';
+                        state.firstName = telegramUser.first_name || '';
+                        state.lastName = telegramUser.last_name || '';
                         state.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                        // --- শেষ ---
 
-                        // Save new user to Firebase
                         await saveUserData();
-                        
-                        // Add welcome transaction
                         addTransaction('welcome_bonus', 10, 'Welcome Bonus CS Tokens');
-                        
                         showNotification("Welcome! You received 10 CS tokens bonus!", "success");
                     }
                     
@@ -1512,7 +1526,7 @@
 
                 } catch (error) {
                     console.error("Error loading user data:", error);
-                    throw error; // Re-throw so init function can handle it
+                    throw error;
                 }
             };
 
