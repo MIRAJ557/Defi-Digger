@@ -14,6 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
+    <!-- এই লাইনটি কপি করে পেস্ট করুন -->
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         /* আপনার সকল CSS স্টাইল এখানে থাকবে - পরিবর্তন করা হয়নি */
         :root {
@@ -34,6 +36,12 @@
             --gold: #fbbf24;
             --platinum: #e5e7eb;
             --token-glow: rgba(251, 191, 36, 0.5);
+            /* ★★★ ওয়ালেট বাটনের স্টাইলের জন্য এই কোড যোগ করুন ★★★ */
+#ton-connect-button-container {
+    margin-top: 15px; /* উপরের লেখা থেকে একটু দূরত্ব তৈরি করবে */
+    display: flex;
+    justify-content: center;
+}
         }
 
         * {
@@ -1069,6 +1077,10 @@
             <div class="user-level" style="margin-top: 10px; font-size: 12px; background: rgba(251, 191, 36, 0.2); padding: 5px 10px; border-radius: 10px; display: inline-block;">
                 Level: <span id="user-level">1</span> | XP: <span id="user-xp">0</span>/100
             </div>
+            <!-- ★★★ এই নতুন কোডটুকু কপি করে এখানে পেস্ট করুন ★★★ -->
+<div id="ton-connect-button-container">
+    <div id="ton-connect-button"></div>
+</div>
         </header>
 
         <div class="balance-cards">
@@ -1300,6 +1312,48 @@
         }
  
         document.addEventListener('DOMContentLoaded', () => {
+            // ★★★ এই সম্পূর্ণ কোডটুকু কপি করে পেস্ট করুন ★★★
+
+// --- TON Connect Integration Start (Upgraded Version) ---
+
+const tonConnectUI = new TonConnectUI.TonConnectUI({
+    manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-wallet/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect-button',
+    
+    uiOptions: {
+        borderRadius: 's',
+        theme: 'dark',
+        walletsListConfiguration: {
+            includeWallets: [
+                {
+                    appName: "tonkeeper",
+                    name: "Tonkeeper",
+                    imageUrl: "https://s.tonkeeper.com/App/app-logo.png",
+                    aboutUrl: "https://tonkeeper.com",
+                    universalLink: "https://app.tonkeeper.com/ton-connect",
+                    bridgeUrl: "https://bridge.tonapi.io/bridge",
+                    platforms: ["ios", "android"]
+                },
+                {
+                    appName: "mytonwallet",
+                    name: "MyTonWallet",
+                    imageUrl: "https://mytonwallet.io/icon-256.png",
+                    aboutUrl: "https://mytonwallet.io/",
+                    universalLink: "https://my.tt/ton-connect",
+                    bridgeUrl: "https://tonconnect.mytonwallet.org/bridge",
+                    platforms: ["chrome", "windows", "macos", "linux", "ios", "android"]
+                }
+            ]
+        }
+    },
+
+    actionsConfiguration: {
+        // আপনার টেলিগ্রাম বটের ইউজারনেম এখানে দেওয়া আছে
+        twaReturnUrl: 'https://t.me/Defidiggermining_bot'
+    }
+});
+
+// --- TON Connect Integration End ---
             // --- CONFIGURATION ---
             const CONFIG = {
                 CS_TOKEN_PRICE: 0.05,
