@@ -1,0 +1,201 @@
+[33mcommit 01595ddd43190ff090e813309ebf5d2f1a9d73cb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 20:40:48 2025 +0600
+
+    Fix .gitignore and App Check implementation
+
+[33mcommit 6cc0cfea3de0ade347f3bbca05c93725d3a224dd[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 17:22:45 2025 +0600
+
+    feat: add debugging function for user session and enhance user ID retrieval logic
+
+[33mcommit fa054baa39a93e43744e14b7fb83084be5fbbd19[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 16:00:02 2025 +0600
+
+    feat: enhance app initialization process with improved error handling and modularization
+
+[33mcommit 6a164ad34518fed5defa3b6dd497026b4aefdbb5[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 15:51:40 2025 +0600
+
+    feat: implement debounced tap handler to prevent rapid multi-clicks on tap button
+
+[33mcommit dca5b5b670e4eda0b960b9c8430e86034ace0d44[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 15:28:25 2025 +0600
+
+    feat: implement lazy loading for images and tab content, optimize package loading with caching, and enhance account recovery process
+
+[33mcommit 7dbbb36ac73f399297af146246c7048171cf23b2[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 04:06:30 2025 +0600
+
+    feat: refine Firebase custom token generation function with improved validation and error handling
+
+[33mcommit 8710ba97cf6dcc22fc674eb560914510db9c2f7d[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 03:37:12 2025 +0600
+
+    feat: add user data migration feature with confirmation and error handling
+
+[33mcommit 49aadb01d69495671390b52fba0a3ab0906a4f32[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 03:25:42 2025 +0600
+
+    feat: add automatic user data migration function with admin access control and error handling
+
+[33mcommit 66bbd356c8ce8d318d37786b21c64df1f9234025[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 03:04:29 2025 +0600
+
+    feat: refactor loadUserData function to include telegramUser parameter for improved user data loading
+
+[33mcommit 075974fcca763769a60b8c2f4355def6bdf59bae[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 02:09:03 2025 +0600
+
+    feat: enhance init function with improved App Check activation, error handling, and user data loading
+
+[33mcommit 71537f11c8f9c7e761709631ddc5833876f3e56e[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 01:55:25 2025 +0600
+
+    feat: enhance Firebase App Check handling and improve user data loading process
+
+[33mcommit 9930d4e918f8bc416430f7be70dce9855974d991[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 01:45:56 2025 +0600
+
+    feat: streamline Firebase App Check setup and enhance user data loading process
+
+[33mcommit b0baa3a8648a9911da3e4b5b5cd1ad45e37c586b[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Tue Oct 28 00:44:37 2025 +0600
+
+    feat: enhance loadUserData function with improved App Check activation, error handling, and user feedback
+
+[33mcommit bcbcce563568cc8243b850716c24ff6253da6f26[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 23:51:12 2025 +0600
+
+    feat: enhance loadUserData function with improved App Check activation, error handling, and user feedback
+
+[33mcommit 45c6d11e7e5c68ccac6f56e7d89d5d2233d11fca[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 23:16:54 2025 +0600
+
+    feat: enhance loadUserData function with improved App Check activation and error handling
+
+[33mcommit 7789d965435b3f3589609af2bdc418a74a220d8e[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 22:49:17 2025 +0600
+
+    feat: add debug line for Firebase App Check in loadUserData function
+
+[33mcommit 0f9657945ad980d5913dda84a747ed44bef623e7[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 03:44:23 2025 +0600
+
+    feat: implement App Check activation in loadUserData function for enhanced security
+
+[33mcommit fde5309043f8601a5cc5545db4b71aa84374e0da[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 03:27:40 2025 +0600
+
+    feat: enhance loadUserData function with detailed error logging and user-friendly authentication failure messages
+
+[33mcommit eb59f280e7563139bd013e98f9ca5df985977e60[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 03:20:25 2025 +0600
+
+    feat: enhance loadUserData function with improved data loading reliability and error handling
+
+[33mcommit 56f9e5678739018da3e26aa731d40b9d53b4c6fe[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 02:28:34 2025 +0600
+
+    feat: enhance Firebase custom token generation function with comprehensive validation and error handling
+
+[33mcommit 1696eb77580b77f4a71242b84656d17cfadfd1b9[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 02:27:13 2025 +0600
+
+    feat: enhance loadUserData function with improved error handling and user notification for authentication failures
+
+[33mcommit 90891923c6037da9dd0eefc1f678fe85005a472a[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 02:23:54 2025 +0600
+
+    feat: enhance loadUserData function with improved error handling and user feedback for authentication failures
+
+[33mcommit 6848afc58893b2c168800c68949e40d8254f0aa7[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 02:18:44 2025 +0600
+
+    feat: enhance Firebase Authentication function with improved validation and error handling
+
+[33mcommit 287b10bd3c6bfd46bb7c3a0c61afd0cc331746e0[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 02:04:17 2025 +0600
+
+    feat: refactor loadUserData function to improve error handling for authentication failures
+
+[33mcommit f3553bbd767f7e01c26009b365c3aa06ffcef90c[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Mon Oct 27 01:04:33 2025 +0600
+
+    feat: enhance Firebase custom token generation function with comprehensive validation and error handling
+
+[33mcommit 6aebdd62098f6ce1374555656d64bee747026baf[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Sun Oct 26 16:38:50 2025 +0600
+
+    feat: implement improved authentication process in loadUserData function for enhanced user login flow
+
+[33mcommit 1752173dbf9c28a122c813e052421951c87c4a8a[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 16:00:09 2025 +0600
+
+    feat: update PACKAGES initialization and enhance loadPackages function for improved data handling and UI refresh
+
+[33mcommit 588e246b5509619e3599d8a3c74fc6e870c308a3[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 15:37:43 2025 +0600
+
+    feat: remove redundant initializePackages calls in loadUserData function for cleaner execution flow
+
+[33mcommit 701851fec3492d0332db2514b3fcf7f104cd96cf[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 15:08:42 2025 +0600
+
+    feat: implement dynamic package loading from Firestore in loadUserData function
+
+[33mcommit 9516bc5d0facd04380b6f93261042ecda1f0a453[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 05:07:36 2025 +0600
+
+    feat: update CS_TOKEN_PRICE for improved pricing accuracy and clear Firestore persistence in loadUserData function
+
+[33mcommit 02b37d339f6515689704478da54799900d1bf860[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 04:38:25 2025 +0600
+
+    feat: add Firestore persistence clearing in loadUserData function for improved data handling
+
+[33mcommit 27fd67395d5325750b7f3af999371477d6e9e2b9[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 04:27:44 2025 +0600
+
+    feat: refactor loadUserData function to use real-time data loading with Promises and improve error handling
+
+[33mcommit a1fafc0e61cace241d7e974a6baddb4ff1ee9e9d[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri Oct 24 04:18:20 2025 +0600
+
+    feat: add Firebase Functions SDK to index.html for enhanced backend capabilities
+
+[33mcommit 4b61b6ecc44ed59b2218ae1caeab4ba9073078ba[m
+Author: MIRAJ557 <bangladesh.net502@gmail.com>
+Date:   Fri

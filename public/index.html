@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Switch - Professional Crypto Mining</title>
+    
+    <!-- Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+    
+    <!-- TON Connect UI -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+    <style>
+        /* আপনার সকল CSS স্টাইল এখানে থাকবে - পরিবর্তন করা হয়নি */
+        :root {
+            --primary: #0a1f3d;
+            --secondary: #1e3a8a;
+            --accent: #fbbf24;
+            --accent-light: #f59e0b;
+            --usd-green: #10b981;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f8fafc;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-light: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --gold: #fbbf24;
+            --platinum: #e5e7eb;
+            --token-glow: rgba(251, 191, 36, 0.5);
+        }
+
+        #ton-connect-button-container {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker), var(--dark));
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 100px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--darker);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: logo-pulse 2s infinite ease-in-out;
+            box-shadow: 0 0 30px var(--token-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-logo::before {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: var(--accent);
+            border-radius: 50%;
+            border: 4px solid var(--darker);
+        }
+
+        .loading-logo::after {
+            content: 'CS';
+            position: absolute;
+            color: var(--darker);
+            font-weight: bold;
+            font-size: 24px;
+            z-index: 2;
+        }
+        
+        @keyframes logo-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 30px var(--token-glow); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px var(--token-glow); }
+            100% { transform: scale(1); box-shadow: 0 0 30px var(--token-glow); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: var(--glass);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--accent), var(--accent-light));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--glass);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(251, 191, 36, 0.4);
+            position: relative;
+            overflow: hidden;
+            animation: logo-rotate 20s infinite linear;
+        }
+
+        .logo::before {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 50%;
+            border: 3px solid var(--darker);
+        }
+
+        .logo::after {
+            content: 'CS';
+            position: absolute;
+            color: var(--darker);
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 2;
+        }
+
+        @keyframes logo-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(to right, var(--accent), var(--accent-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Balance Cards */
+        .balance-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            transition: transform 0.3s;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .balance-card.usd-card {
+            background: linear-gradient(135deg, #047857, var(--usd-green));
+        }
+
+        .balance-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .balance-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .balance-amount {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: color 0.3s ease;
+        }
+        
+        .balance-amount.flash {
+            color: var(--warning);
+            animation: flash-anim 0.5s ease;
+        }
+
+        @keyframes flash-anim {
+            0% { transform: scale(1.1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1.1); }
+        }
+
+        .balance-subtext {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Mining Stats */
+        .mining-stats {
+            display: flex;
+            justify-content: space-between;
+            background: var(--glass);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .stat-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 40px;
+            width: 1px;
+            background: var(--glass-border);
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Tap Area - Enhanced with Token Mining Effect */
+        .tap-area {
+            background: var(--glass);
+            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: pulse 2s infinite ease-in-out;
+            overflow: hidden;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); }
+            50% { transform: scale(1.02); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3); }
+            100% { transform: scale(1); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); }
+        }
+
+        .tap-area.bang-effect {
+            animation: bang 0.5s ease-out;
+        }
+
+        @keyframes bang {
+            0% { transform: scale(1); background: var(--glass); }
+            25% { transform: scale(1.1); background: rgba(251, 191, 36, 0.3); }
+            50% { transform: scale(1.2); background: rgba(245, 158, 11, 0.5); box-shadow: 0 0 50px var(--accent); }
+            75% { transform: scale(1.1); background: rgba(251, 191, 36, 0.3); }
+            100% { transform: scale(1); background: var(--glass); }
+        }
+
+        .tap-area:active {
+            transform: scale(0.97) !important;
+            animation: none;
+        }
+
+        .tap-area.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            animation: none;
+        }
+
+        .tap-token {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .token {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+
+        .token-front, .token-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .token-front {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            transform: rotateY(0deg);
+        }
+
+        .token-back {
+            background: linear-gradient(135deg, var(--accent-light), var(--accent));
+            transform: rotateY(180deg);
+        }
+
+        .token-symbol {
+            font-size: 40px;
+            font-weight: bold;
+            color: var(--darker);
+        }
+
+        .token-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--token-glow);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tap-area.active .token-glow {
+            opacity: 1;
+        }
+
+        .tap-area.active .token {
+            transform: rotateY(180deg);
+        }
+
+        .mining-beam {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 0;
+            background: linear-gradient(to top, var(--accent), transparent);
+            border-radius: 2px 2px 0 0;
+            opacity: 0;
+            transition: height 0.3s, opacity 0.3s;
+        }
+
+        .tap-area.mining .mining-beam {
+            height: 100px;
+            opacity: 0.7;
+        }
+
+        .tap-text {
+            font-size: 22px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .tap-subtext {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Floating Tokens - Enhanced */
+        .floating-token {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            animation: float-up 1.5s ease-out forwards;
+            box-shadow: 0 0 10px var(--token-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--darker);
+            font-size: 14px;
+        }
+        
+        .floating-token::before {
+            content: 'CS';
+        }
+        
+        @keyframes float-up {
+            0% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.5) rotate(180deg); }
+        }
+
+        /* Mining Particles */
+        .mining-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 5;
+            animation: particle-float 1s ease-out forwards;
+            box-shadow: 0 0 5px var(--accent);
+        }
+        
+        @keyframes particle-float {
+            0% { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 20px;
+            margin: 25px 0 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+            position: relative;
+            font-weight: 600;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(to right, var(--accent), var(--accent-light));
+            border-radius: 3px;
+        }
+
+        /* Packages - Enhanced */
+        .packages {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .package {
+            background: var(--glass);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .package::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .package:hover::before {
+            left: 100%;
+        }
+
+        .package:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .package-premium {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            grid-column: 1 / -1;
+            position: relative;
+        }
+
+        .package-premium::after {
+            content: 'BEST VALUE';
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: var(--gold);
+            color: black;
+            padding: 5px 30px;
+            font-size: 12px;
+            font-weight: bold;
+            transform: rotate(45deg);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .package-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .package-price {
+            font-size: 20px;
+            color: var(--accent);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .package-premium .package-price {
+            color: var(--usd-green);
+        }
+
+        .package-features {
+            font-size: 13px;
+            margin-bottom: 18px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            box-shadow: 0 5px 15px rgba(38, 117, 252, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(38, 117, 252, 0.4);
+        }
+        
+        .btn:disabled {
+            background: gray;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, var(--usd-green), #047857);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--glass);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 15px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            white-space: nowrap;
+            padding: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            flex: 0 0 auto;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            position: relative;
+            min-width: 80px;
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+        
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: linear-gradient(to right, var(--accent), var(--accent-light));
+            transition: width 0.3s;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .tab-nav.visible {
+            opacity: 0.8;
+            pointer-events: auto;
+        }
+
+        .tab-nav:hover {
+            opacity: 1;
+        }
+
+        .tab-nav.left {
+            left: -15px;
+        }
+
+        .tab-nav.right {
+            right: -15px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Content Box */
+        .content-box {
+            background: var(--glass);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--accent), var(--accent-light));
+        }
+
+        .address-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 13px;
+            word-break: break-all;
+            margin: 15px 0;
+            text-align: center;
+            font-family: monospace;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--glass-light);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent);
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.15);
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+        }
+
+        /* Support Link */
+        .support-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
+            margin-top: 25px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 15px;
+            background: var(--glass);
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+        }
+        
+        .support-link:hover {
+            background: rgba(251, 191, 36, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 35px;
+            padding: 20px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-weight: 500;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Big Bang Notification */
+        .big-bang-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: black;
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 24px;
+            text-align: center;
+            z-index: 2000;
+            box-shadow: 0 0 50px var(--accent);
+            opacity: 0;
+            transition: all 0.5s;
+        }
+
+        .big-bang-notification.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Progress Bar for Cooldown */
+        .cooldown-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 5px;
+            background: linear-gradient(to right, var(--accent), var(--accent-light));
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 0 0 25px 25px;
+        }
+
+        /* Tap Counter for Big Bang */
+        .tap-counter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(239, 68, 68, 0.7);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        /* Transaction History */
+        .transaction-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-type {
+            font-weight: bold;
+        }
+
+        .transaction-amount {
+            font-weight: bold;
+        }
+
+        .transaction-positive {
+            color: var(--success);
+        }
+
+        .transaction-negative {
+            color: var(--danger);
+        }
+
+        .transaction-pending {
+            color: var(--warning);
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 480px) {
+            .balance-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .mining-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stat-item:not(:last-child)::after {
+                display: none;
+            }
+            
+            .tap-area {
+                padding: 30px 20px;
+            }
+            
+            .tap-token {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .token-symbol {
+                font-size: 30px;
+            }
+            
+            .tap-text {
+                font-size: 20px;
+            }
+            
+            .package {
+                padding: 15px;
+            }
+            
+            .tab {
+                padding: 12px 10px;
+                min-width: 70px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-logo"></div>
+        <div>Loading Coin Switch...</div>
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="loading-progress-bar"></div>
+        </div>
+        <div class="loading-text" id="loading-text">Initializing...</div>
+    </div>
+
+    <div class="container" id="main-content" style="display: none;">
+        <header>
+            <div class="logo-container">
+                <div class="logo"></div>
+                <div class="logo-text">Coin Switch</div>
+            </div>
+            <p class="subtitle">Professional Crypto Mining Platform</p>
+            <div class="user-level" style="margin-top: 10px; font-size: 12px; background: rgba(251, 191, 36, 0.2); padding: 5px 10px; border-radius: 10px; display: inline-block;">
+                Level: <span id="user-level">1</span> | XP: <span id="user-xp">0</span>/100
+            </div>
+            <!-- TON Connect Wallet Button -->
+            <div id="ton-connect-button-container">
+                <div id="ton-connect-button"></div>
+            </div>
+        </header>
+
+        <div class="balance-cards">
+            <div class="balance-card">
+                <div class="balance-title">CS Token Balance</div>
+                <div class="balance-amount" id="cs-balance">0.00 CS</div>
+                <div class="balance-subtext" id="cs-balance-usd">≈ $0.00</div>
+            </div>
+            <div class="balance-card usd-card">
+                <div class="balance-title">USD Balance</div>
+                <div class="balance-amount" id="usd-balance">$0.00</div>
+                <div class="balance-subtext">From Mining & Deposits</div>
+            </div>
+        </div>
+
+        <div class="mining-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="mining-speed">0.0 CS/hr</div>
+                <div class="stat-label">Mining Speed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="hash-power">0 H/s</div>
+                <div class="stat-label">Hash Power</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="usd-mining">$0.00/day</div>
+                <div class="stat-label">USD Earnings</div>
+            </div>
+        </div>
+
+        <div class="tap-area" id="tap-button">
+            <div class="tap-counter">Taps: <span id="tap-count">0</span>/12</div>
+            <div class="combo-counter" style="position: absolute; top: 10px; right: 10px; background: rgba(239, 68, 68, 0.7); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; display: none;">
+                Combo: <span id="combo-count">0</span>x
+            </div>
+            
+            <div class="tap-token">
+                <div class="token">
+                    <div class="token-front">
+                        <div class="token-symbol">CS</div>
+                    </div>
+                    <div class="token-back">
+                        <div class="token-symbol">CS</div>
+                    </div>
+                </div>
+                <div class="token-glow"></div>
+                <div class="mining-beam"></div>
+            </div>
+            
+            <div class="tap-text">Tap to Mine</div>
+            <div class="tap-subtext" id="tap-cooldown-text">Ready to Tap</div>
+            <div class="cooldown-progress" id="cooldown-progress"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <div class="tab-nav left"><i class="fas fa-chevron-left"></i></div>
+            <div class="tabs" id="tabs-scroll">
+                <div class="tab active" data-tab="packages">Packages</div>
+                <div class="tab" data-tab="wallet">Wallet</div>
+                <div class="tab" data-tab="deposit">Deposit</div>
+                <div class="tab" data-tab="withdraw">Withdraw</div>
+                <div class="tab" data-tab="referral">Referrals</div>
+                <div class="tab" data-tab="history">History</div>
+            </div>
+            <div class="tab-nav right"><i class="fas fa-chevron-right"></i></div>
+        </div>
+        
+        <!-- Packages Tab -->
+        <div class="tab-content active" id="packages-tab">
+            <div class="section-title">Hash Power Packages</div>
+            <div class="packages" id="packages-container">
+                <!-- Packages will be dynamically inserted here by JS -->
+            </div>
+        </div>
+
+        <!-- Wallet Tab -->
+        <div class="tab-content" id="wallet-tab">
+             <div class="section-title">Your Wallet</div>
+             <div class="content-box">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-wallet" style="font-size: 50px; color: var(--accent); margin-bottom: 15px;"></i>
+                    <h3>Total Estimated Value</h3>
+                    <div style="font-size: 32px; font-weight: bold; margin: 10px 0;" id="total-balance-usd">$0.00</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="background: rgba(0,0,0,0.1); padding: 15px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 14px; opacity: 0.8;">CS Tokens</div>
+                        <div style="font-size: 20px; font-weight: bold;" id="wallet-cs">0.00 CS</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.1); padding: 15px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 14px; opacity: 0.8;">USD Balance</div>
+                        <div style="font-size: 20px; font-weight: bold;" id="wallet-usd">$0.00</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 14px;">Daily USD Earnings</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--usd-green);" id="daily-usd-earnings">$0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Tab -->
+        <div class="tab-content" id="deposit-tab">
+            <div class="section-title">Deposit Funds</div>
+            <div class="content-box">
+                <p>Deposit USDT (TRC20) to the address below. After transaction, submit your deposit request for manual approval by admin.</p>
+                <div class="address-box">
+                    <span id="deposit-address-text">TSPQ8Xk4LHNMoL7P6AS1YtYrHRYPM1fhNS</span>
+                    <button class="copy-btn" id="copy-address-btn"><i class="far fa-copy"></i></button>
+                </div>
+                 <div class="form-group">
+                    <label for="deposit-amount">Deposit Amount (USD)</label>
+                    <input type="number" id="deposit-amount" placeholder="e.g., 50" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="transaction-hash">Transaction Hash (Optional)</label>
+                    <input type="text" id="transaction-hash" placeholder="Enter transaction hash if available">
+                </div>
+                <button class="btn" id="submit-deposit-btn">Submit Deposit Request</button>
+                <p style="font-size: 12px; text-align: center; margin-top: 15px; opacity: 0.7;">
+                    Deposit requests are manually approved by admin within 24 hours.
+                </p>
+            </div>
+        </div>
+
+        <!-- Withdraw Tab -->
+        <div class="tab-content" id="withdraw-tab">
+            <div class="section-title">Withdraw Funds</div>
+            <div class="content-box">
+                 <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-money-bill-wave" style="font-size: 50px; color: var(--usd-green); margin-bottom: 15px;"></i>
+                    <h3>Withdraw USD</h3>
+                    <p>Minimum withdrawal amount: <strong>$10.00</strong></p>
+                </div>
+                <div class="form-group">
+                    <label for="withdraw-amount">Amount to Withdraw</label>
+                    <input type="number" id="withdraw-amount" placeholder="10.00" min="10">
+                </div>
+                <div class="form-group">
+                    <label for="usdt-address">Your USDT (TRC20) Address</label>
+                    <input type="text" id="usdt-address" placeholder="Enter your USDT address">
+                </div>
+                <button class="btn btn-premium" id="withdraw-btn">Request Withdraw</button>
+                <p style="font-size: 12px; text-align: center; margin-top: 15px; opacity: 0.7;">
+                    Withdrawal requests are manually processed by admin within 24 hours.
+                </p>
+            </div>
+        </div>
+
+        <!-- Referral Tab -->
+        <div class="tab-content" id="referral-tab">
+            <div class="section-title">Referral System</div>
+            <div class="content-box" style="text-align: center;">
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Total Referrals</div>
+                    <div id="referral-count" style="font-size: 36px; font-weight: bold; color: var(--accent);">0</div>
+                    <div style="font-size: 14px; margin-top: 5px;">Earn 10% of your referrals' mining rewards!</div>
+                </div>
+                <p>Your Referral Link:</p>
+                <div class="address-box">
+                    <span id="referral-link-text">https://t.me/CoinSwitchMiningBot?start=ref123456</span>
+                    <button class="copy-btn" id="copy-ref-btn"><i class="far fa-copy"></i></button>
+                </div>
+                <button class="btn" id="share-link-btn" style="margin-top: 15px;">Share Link</button>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="history-tab">
+            <div class="section-title">Transaction History</div>
+            <div class="content-box">
+                <div class="transaction-history" id="transaction-history">
+                    <!-- Transaction history will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Link -->
+        <a href="https://t.me/Blockchain_423" class="support-link" target="_blank" rel="noopener">
+            <i class="fab fa-telegram"></i> Contact Support
+        </a>
+
+        <footer>
+            Coin Switch &copy; 2025 | All Rights Reserved
+        </footer>
+    </div>
+    
+    <!-- Notifications -->
+    <div class="notification" id="notification">
+        <i id="notification-icon" class="fas fa-check-circle"></i>
+        <span id="notification-text">Notification Text</span>
+    </div>
+
+    <!-- Big Bang Notification -->
+    <div class="big-bang-notification" id="big-bang-notification">
+        <div>BIG BANG!</div>
+        <div style="font-size: 16px; margin-top: 5px;">+10 CS Tokens!</div>
+    </div>
+
+    <script>
+        // =============================================
+        // Firebase Configuration and Initialization
+        // =============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyB57oI5BOktgge6UJSWsfiAytUY0YgXNSA",
+            authDomain: "defi-digger.firebaseapp.com",
+            projectId: "defi-digger",
+            storageBucket: "defi-digger.firebasestorage.app",
+            messagingSenderId: "194287488251",
+            appId: "1:194287488251:web:5a46a5825b95917859b45e",
+            measurementId: "G-RZ8TLE355C"
+        };
+
+         // Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+
+// Firebase App Check - কোনো setTimeout বা দেরি ছাড়াই চালু করুন
+try {
+  const appCheck = firebase.appCheck();
+  appCheck.activate(
+    '6LcmZtYrAAAAANG5TqckGikiEYURbnBzs85wqHrj', // আপনার Site Key
+    true
+  );
+  console.log('Firebase App Check সফলভাবে চালু হয়েছে');
+} catch (error) {
+  console.log('App Check চালু করতে সমস্যা হয়েছে:', error);
+}
+
+// এখন অন্যান্য Firebase সার্ভিস চালু করুন
+const db = firebase.firestore();
+const functions = firebase.functions();
+const auth = firebase.auth();
+
+       
+
+        // =============================================
+        // TON Connect UI - Delayed Loading
+        // =============================================
+        let tonConnectUI;
+        setTimeout(() => {
+            try {
+                console.log("Loading TON Connect UI...");
+                tonConnectUI = new TonConnectUI.TonConnectUI({
+                    manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-wallet/tonconnect-manifest.json',
+                    buttonRootId: 'ton-connect-button',
+                    uiOptions: {
+                        borderRadius: 's',
+                        theme: 'dark',
+                        walletsListConfiguration: {
+                            includeWallets: [
+                                {
+                                    appName: "tonkeeper",
+                                    name: "Tonkeeper",
+                                    imageUrl: "https://s.tonkeeper.com/App/app-logo.png",
+                                    aboutUrl: "https://tonkeeper.com",
+                                    universalLink: "https://app.tonkeeper.com/ton-connect",
+                                    bridgeUrl: "https://bridge.tonapi.io/bridge",
+                                    platforms: ["ios", "android"]
+                                },
+                                {
+                                    appName: "mytonwallet",
+                                    name: "MyTonWallet",
+                                    imageUrl: "https://mytonwallet.io/icon-256.png",
+                                    aboutUrl: "https://mytonwallet.io/",
+                                    universalLink: "https://my.tt/ton-connect",
+                                    bridgeUrl: "https://tonconnect.mytonwallet.org/bridge",
+                                    platforms: ["chrome", "windows", "macos", "linux", "ios", "android"]
+                                }
+                            ]
+                        }
+                    },
+                    actionsConfiguration: {
+                        twaReturnUrl: 'https://t.me/Defidiggermining_bot'
+                    }
+                });
+                console.log("TON Connect UI loaded successfully");
+            } catch (error) {
+                console.log("TON Connect UI failed to load (non-critical)");
+            }
+        }, 5000);
+
+        // =============================================
+        // Application Configuration
+        // =============================================
+        const CONFIG = {
+            CS_TOKEN_PRICE: 0.0005,
+            TAP_REWARD: 0.5,
+            TAP_COOLDOWN: 5000,
+            HASH_TO_CS_PER_HOUR: 0.05,
+            MIN_WITHDRAWAL: 10,
+            BOT_USERNAME: 'Defidiggermining_bot',
+            BIG_BANG_TAPS: 12,
+            COMBO_TIMEOUT: 3000,
+            REFERRAL_BONUS_PERCENT: 10
+        };
+
+        const PACKAGES = [
+            { id: 'basic', title: 'Basic Pack', price: 20, hash_power: 50, bonus_cs: 2, is_premium: false },
+            { id: 'premium', title: 'Premium Pack', price: 30, hash_power: 100, bonus_cs: 5, is_premium: false },
+            { id: 'gold', title: 'Gold Pack', price: 50, hash_power: 200, bonus_cs: 10, is_premium: false },
+            { id: 'exclusive', title: 'Exclusive USD Pack', price: 222, hash_power: 1000, daily_usd: 1.82, is_premium: true }
+        ];
+
+        // =============================================
+        // Global Variables
+        // =============================================
+        const tg = window.Telegram.WebApp;
+        let state = {
+            csBalance: 0,
+            usdBalance: 0,
+            hashPower: 10,
+            dailyUsdReward: 0,
+            lastTapTime: 0,
+            purchasedPackages: [],
+            referralCount: 0,
+            lastPassiveUpdate: Date.now(),
+            userId: null,
+            userLevel: 1,
+            userXP: 0,
+            comboCount: 0,
+            lastComboTime: 0,
+            tapCount: 0,
+            referralLink: '',
+            referredBy: null,
+            transactions: []
+        };
+
+        // =============================================
+        // DOM Elements
+        // =============================================
+        const dom = {
+            loadingScreen: document.getElementById('loading-screen'),
+            loadingProgressBar: document.getElementById('loading-progress-bar'),
+            loadingText: document.getElementById('loading-text'),
+            mainContent: document.getElementById('main-content'),
+            csBalance: document.getElementById('cs-balance'),
+            csBalanceUsd: document.getElementById('cs-balance-usd'),
+            usdBalance: document.getElementById('usd-balance'),
+            miningSpeed: document.getElementById('mining-speed'),
+            hashPower: document.getElementById('hash-power'),
+            usdMining: document.getElementById('usd-mining'),
+            tapButton: document.getElementById('tap-button'),
+            tapToken: document.querySelector('.tap-token'),
+            token: document.querySelector('.token'),
+            tokenGlow: document.querySelector('.token-glow'),
+            miningBeam: document.querySelector('.mining-beam'),
+            tapCooldownText: document.getElementById('tap-cooldown-text'),
+            packagesContainer: document.getElementById('packages-container'),
+            walletCs: document.getElementById('wallet-cs'),
+            walletUsd: document.getElementById('wallet-usd'),
+            totalBalanceUsd: document.getElementById('total-balance-usd'),
+            dailyUsdEarnings: document.getElementById('daily-usd-earnings'),
+            depositAmountInput: document.getElementById('deposit-amount'),
+            transactionHashInput: document.getElementById('transaction-hash'),
+            submitDepositBtn: document.getElementById('submit-deposit-btn'),
+            withdrawAmountInput: document.getElementById('withdraw-amount'),
+            usdtAddressInput: document.getElementById('usdt-address'),
+            withdrawBtn: document.getElementById('withdraw-btn'),
+            notification: document.getElementById('notification'),
+            notificationIcon: document.getElementById('notification-icon'),
+            notificationText: document.getElementById('notification-text'),
+            copyAddressBtn: document.getElementById('copy-address-btn'),
+            copyRefBtn: document.getElementById('copy-ref-btn'),
+            shareLinkBtn: document.getElementById('share-link-btn'),
+            depositAddressTextElement: document.getElementById('deposit-address-text'),
+            referralLinkTextElement: document.getElementById('referral-link-text'),
+            referralCount: document.getElementById('referral-count'),
+            tabsContainer: document.getElementById('tabs-scroll'),
+            tabNavLeft: document.querySelector('.tab-nav.left'),
+            tabNavRight: document.querySelector('.tab-nav.right'),
+            comboCounter: document.querySelector('.combo-counter'),
+            comboCount: document.getElementById('combo-count'),
+            userLevel: document.getElementById('user-level'),
+            userXP: document.getElementById('user-xp'),
+            bigBangNotification: document.getElementById('big-bang-notification'),
+            tapCount: document.getElementById('tap-count'),
+            cooldownProgress: document.getElementById('cooldown-progress'),
+            transactionHistory: document.getElementById('transaction-history')
+        };
+
+        // =============================================
+        // Utility Functions
+        // =============================================
+        const updateLoadingProgress = (percentage, text) => {
+            dom.loadingProgressBar.style.width = `${percentage}%`;
+            if (text) dom.loadingText.textContent = text;
+        };
+
+        const sanitizeInput = (input) => {
+            if (typeof input !== 'string') return input;
+            return input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        };
+
+        const formatCurrency = (amount, decimals = 2) => {
+            return amount.toFixed(decimals).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        };
+
+        const formatDate = (timestamp) => {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        };
+
+        const debugUserSession = () => {
+            console.log("=== USER SESSION DEBUG INFO ===");
+            console.log("Telegram User:", tg.initDataUnsafe.user);
+            console.log("Firebase User:", firebase.auth().currentUser);
+            console.log("State UserId:", state.userId);
+            console.log("LocalStorage State:", localStorage.getItem('coinSwitchState'));
+            console.log("=================================");
+        };
+
+        // =============================================
+        // Firebase Data Management
+        // =============================================
+        const loadAppSettings = async () => {
+            try {
+                updateLoadingProgress(10, 'Loading app settings...');
+                const settingsDoc = await db.collection('settings').doc('appSettings').get();
+                
+                if (settingsDoc.exists) {
+                    const appSettings = settingsDoc.data();
+                    CONFIG.CS_TOKEN_PRICE = appSettings.csTokenPrice || CONFIG.CS_TOKEN_PRICE;
+                    CONFIG.TAP_REWARD = appSettings.tapReward || CONFIG.TAP_REWARD;
+                    CONFIG.MIN_WITHDRAWAL = appSettings.minWithdrawal || CONFIG.MIN_WITHDRAWAL;
+                    CONFIG.HASH_TO_CS_PER_HOUR = appSettings.hashToCs || CONFIG.HASH_TO_CS_PER_HOUR;
+                    console.log("App settings loaded from database:", CONFIG);
+                } else {
+                    console.warn("App settings not found in database. Using default values.");
+                }
+            } catch (error) {
+                console.error("Error loading app settings:", error);
+                showNotification("Could not load latest settings.", "warning");
+            }
+        };
+
+        const loadPackages = async () => {
+            try {
+                console.log("Loading packages from database...");
+                
+                if (window.packageCache && Date.now() - window.packageCache.timestamp < 300000) {
+                    console.log("Using cached packages");
+                    window.PACKAGES = window.packageCache.data;
+                    initializePackages();
+                    return;
+                }
+
+                const packagesSnapshot = await db.collection('packages').get();
+                
+                if (!packagesSnapshot.empty) {
+                    const newPackages = []; 
+                    packagesSnapshot.forEach(doc => {
+                        newPackages.push({ 
+                            id: doc.id, 
+                            ...doc.data()
+                        });
+                    });
+                    
+                    window.PACKAGES = newPackages;
+                    window.packageCache = {
+                        data: newPackages,
+                        timestamp: Date.now()
+                    };
+                    
+                    initializePackages();
+                    console.log("Packages loaded successfully:", window.PACKAGES);
+                } else {
+                    console.warn("No packages found in database. Using default hardcoded list.");
+                }
+            } catch (error) {
+                console.error("Package loading error:", error.message);
+                if (window.packageCache) {
+                    window.PACKAGES = window.packageCache.data;
+                    initializePackages();
+                }
+            }
+        };
+
+        const getUserId = () => {
+            const firebaseUser = firebase.auth().currentUser;
+            if (firebaseUser && firebaseUser.uid) {
+                console.log("Using Firebase UID:", firebaseUser.uid);
+                return firebaseUser.uid;
+            }
+            
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const telegramId = tg.initDataUnsafe.user.id;
+                if (telegramId) {
+                    const telegramUid = `tg_${telegramId}`;
+                    console.log("Using Telegram UID:", telegramUid);
+                    return telegramUid;
+                }
+            }
+            
+            const savedState = localStorage.getItem('coinSwitchState');
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                if (parsedState.userId) {
+                    console.log("Using localStorage UID:", parsedState.userId);
+                    return parsedState.userId;
+                }
+            }
+            
+            console.error("CRITICAL: No user ID found from any source");
+            return null;
+        };
+
+        const saveUserData = async () => {
+            try {
+                if (!state.userId) return;
+                await db.collection('users').doc(state.userId).set(state, { merge: true });
+                localStorage.setItem('coinSwitchState', JSON.stringify(state));
+            } catch (error) {
+                console.error("Error saving user data:", error);
+                localStorage.setItem('coinSwitchState', JSON.stringify(state));
+            }
+        };
+
+        const addTransaction = async (type, amount, description, status = 'completed') => {
+            try {
+                const transaction = {
+                    userId: state.userId,
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    status: status,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                const docRef = await db.collection('transactions').add(transaction);
+                transaction.id = docRef.id;
+                transaction.timestamp = new Date();
+                
+                state.transactions.unshift(transaction);
+                if (state.transactions.length > 50) {
+                    state.transactions.pop();
+                }
+                
+                updateTransactionHistoryUI();
+            } catch (error) {
+                console.error("Error adding transaction:", error);
+            }
+        };
+
+        const loadTransactionHistory = async () => {
+            try {
+                const transactionsSnapshot = await db.collection('transactions')
+                    .where('userId', '==', state.userId)
+                    .orderBy('timestamp', 'desc')
+                    .limit(50)
+                    .get();
+                
+                state.transactions = [];
+                transactionsSnapshot.forEach(doc => {
+                    state.transactions.push({ id: doc.id, ...doc.data() });
+                });
+                
+                updateTransactionHistoryUI();
+            } catch (error) {
+                console.error("Error loading transaction history:", error);
+            }
+        };
+
+        // =============================================
+        // Visual Effects
+        // =============================================
+        const createFloatingToken = (e) => {
+            const token = document.createElement('div');
+            token.classList.add('floating-token');
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
+            token.style.left = `${clientX}px`;
+            token.style.top = `${clientY}px`;
+            document.body.appendChild(token);
+            setTimeout(() => token.remove(), 1500);
+        };
+
+        const createMiningParticles = (e) => {
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('mining-particle');
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
+                particle.style.left = `${clientX}px`;
+                particle.style.top = `${clientY}px`;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 50 + Math.random() * 50;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        };
+
+        const triggerMiningEffect = () => {
+            dom.tapButton.classList.add('active');
+            dom.tapButton.classList.add('mining');
+            
+            setTimeout(() => {
+                dom.tapButton.classList.remove('active');
+                dom.tapButton.classList.remove('mining');
+            }, 300);
+        };
+
+        // =============================================
+        // UI Update Functions
+        // =============================================
+        const updateUI = () => {
+            const csBalanceUSDValue = state.csBalance * CONFIG.CS_TOKEN_PRICE;
+            const totalBalanceValue = state.usdBalance + csBalanceUSDValue;
+            
+            dom.csBalance.textContent = `${state.csBalance.toFixed(4)} CS`;
+            dom.csBalanceUsd.textContent = `≈ $${csBalanceUSDValue.toFixed(2)}`;
+            dom.usdBalance.textContent = `$${state.usdBalance.toFixed(2)}`;
+            
+            const hourlyCsMining = state.hashPower * CONFIG.HASH_TO_CS_PER_HOUR;
+            dom.miningSpeed.textContent = `${hourlyCsMining.toFixed(2)} CS/hr`;
+            dom.hashPower.textContent = `${state.hashPower} H/s`;
+            dom.usdMining.textContent = `$${state.dailyUsdReward.toFixed(2)}/day`;
+            
+            dom.walletCs.textContent = `${state.csBalance.toFixed(4)} CS`;
+            dom.walletUsd.textContent = `$${state.usdBalance.toFixed(2)}`;
+            dom.totalBalanceUsd.textContent = `$${totalBalanceValue.toFixed(2)}`;
+            dom.dailyUsdEarnings.textContent = `$${state.dailyUsdReward.toFixed(2)}`;
+            dom.referralCount.textContent = state.referralCount;
+            
+            const xpNeeded = state.userLevel * 100;
+            dom.userLevel.textContent = state.userLevel;
+            dom.userXP.textContent = `${state.userXP}/${xpNeeded}`;
+
+            dom.tapCount.textContent = `${state.tapCount % CONFIG.BIG_BANG_TAPS}`;
+            
+            dom.comboCounter.style.display = state.comboCount > 1 ? 'block' : 'none';
+            dom.comboCount.textContent = state.comboCount;
+        };
+
+        const updateTransactionHistoryUI = () => {
+            if (!dom.transactionHistory) return;
+            
+            if (state.transactions.length === 0) {
+                dom.transactionHistory.innerHTML = '<p style="text-align: center; opacity: 0.7;">No transactions yet</p>';
+                return;
+            }
+            
+            dom.transactionHistory.innerHTML = state.transactions.map(transaction => {
+                const amountClass = transaction.amount >= 0 ? 'transaction-positive' : 'transaction-negative';
+                const statusClass = transaction.status !== 'completed' ? 'transaction-pending' : '';
+                
+                return `
+                    <div class="transaction-item">
+                        <div>
+                            <div class="transaction-type">${transaction.description}</div>
+                            <div class="transaction-date">${formatDate(transaction.timestamp)}</div>
+                            <div class="${statusClass}">${transaction.status}</div>
+                        </div>
+                        <div class="transaction-amount ${amountClass}">
+                            ${transaction.amount >= 0 ? '+' : ''}${transaction.type.includes('usd') ? '$' : ''}${transaction.amount.toFixed(transaction.type.includes('usd') ? 2 : 4)}${transaction.type.includes('usd') ? '' : ' CS'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const flashElement = (element) => {
+            element.classList.add('flash');
+            setTimeout(() => element.classList.remove('flash'), 500);
+        };
+
+        const showNotification = (message, type = 'success') => {
+            dom.notificationText.textContent = message;
+            let iconClass = 'fas fa-check-circle', bgColor = 'var(--success)';
+            if (type === 'warning') { iconClass = 'fas fa-exclamation-triangle'; bgColor = 'var(--warning)'; }
+            else if (type === 'error') { iconClass = 'fas fa-times-circle'; bgColor = 'var(--danger)'; }
+            else if (type === 'info') { iconClass = 'fas fa-info-circle'; bgColor = 'var(--primary)'; }
+            dom.notificationIcon.className = iconClass;
+            dom.notification.style.background = bgColor;
+            dom.notification.classList.add('show');
+            setTimeout(() => dom.notification.classList.remove('show'), 3000);
+        };
+
+        // =============================================
+        // Core Application Logic
+        // =============================================
+        const handleTap = (e) => {
+            const now = Date.now();
+            if (now - state.lastTapTime < CONFIG.TAP_COOLDOWN) return;
+
+            if (now - state.lastComboTime > CONFIG.COMBO_TIMEOUT) state.comboCount = 0;
+            state.comboCount++;
+            state.lastComboTime = now;
+
+            let reward = CONFIG.TAP_REWARD;
+            if (state.comboCount >= 10) reward *= 3;
+            else if (state.comboCount >= 5) reward *= 2;
+
+            state.lastTapTime = now;
+            state.csBalance += reward;
+            state.tapCount++;
+            state.userXP++;
+
+            addTransaction('tap_cs', reward, `Tap Mining (Combo x${state.comboCount})`);
+
+            triggerMiningEffect();
+            createFloatingToken(e);
+            createMiningParticles(e);
+            
+            checkLevelUp();
+            updateUI();
+            flashElement(dom.csBalance);
+            updateTapCooldown();
+
+            if (state.comboCount === 5) showNotification('Combo x2! Double rewards!', 'success');
+            else if (state.comboCount === 10) showNotification('Combo x3! Triple rewards!', 'success');
+
+            if (state.tapCount > 0 && state.tapCount % CONFIG.BIG_BANG_TAPS === 0) {
+                triggerBigBang();
+            }
+        };
+        
+        const triggerBigBang = () => {
+            const bigReward = 10 + (state.userLevel * 2);
+            state.csBalance += bigReward;
+            
+            addTransaction('big_bang_cs', bigReward, 'Big Bang Bonus');
+            
+            dom.tapButton.classList.add('bang-effect');
+            setTimeout(() => dom.tapButton.classList.remove('bang-effect'), 500);
+            
+            dom.bigBangNotification.querySelector('div:last-child').textContent = `+${bigReward} CS Tokens!`;
+            dom.bigBangNotification.classList.add('show');
+            setTimeout(() => dom.bigBangNotification.classList.remove('show'), 2000);
+            
+            updateUI();
+            showNotification(`Big Bang! +${bigReward} CS Tokens!`, 'success');
+        };
+        
+        const updateTapCooldown = () => {
+            const now = Date.now();
+            const timePassed = now - state.lastTapTime;
+            
+            if (timePassed >= CONFIG.TAP_COOLDOWN) { 
+                dom.tapCooldownText.textContent = "Ready to Tap"; 
+                dom.cooldownProgress.style.width = '100%';
+                dom.tapButton.classList.remove('disabled');
+                return; 
+            }
+            
+            const progressPercentage = Math.min((timePassed / CONFIG.TAP_COOLDOWN) * 100, 100);
+            dom.cooldownProgress.style.width = `${progressPercentage}%`;
+            const timeLeft = Math.ceil((CONFIG.TAP_COOLDOWN - timePassed) / 1000);
+            dom.tapCooldownText.textContent = `Cooldown: ${timeLeft}s`;
+            dom.tapButton.classList.add('disabled');
+        };
+        
+        const checkLevelUp = () => {
+            const xpNeeded = state.userLevel * 100;
+            if (state.userXP >= xpNeeded) {
+                state.userLevel++;
+                state.userXP = 0;
+                state.hashPower += state.userLevel * 5;
+                
+                addTransaction('level_up', 0, `Level Up to ${state.userLevel}`);
+                showNotification(`Level Up! You're now Level ${state.userLevel}`, 'success');
+            }
+        };
+        
+        const passiveMining = () => {
+            const now = Date.now();
+            const timePassedInSeconds = (now - state.lastPassiveUpdate) / 1000;
+            if (timePassedInSeconds <= 0) return;
+
+            state.lastPassiveUpdate = now;
+            
+            const hourlyCsGain = state.hashPower * CONFIG.HASH_TO_CS_PER_HOUR;
+            const hourlyUsdGain = state.dailyUsdReward / 24;
+            
+            const csGained = (hourlyCsGain / 3600) * timePassedInSeconds;
+            const usdGained = (hourlyUsdGain / 3600) * timePassedInSeconds;
+            
+            state.csBalance += csGained;
+            if (usdGained > 0) {
+                state.usdBalance += usdGained;
+            }
+            
+            updateUI();
+        };
+
+        const initializePackages = () => {
+            dom.packagesContainer.innerHTML = '';
+            PACKAGES.forEach(pkg => {
+                const isPurchased = state.purchasedPackages.includes(pkg.id);
+                const packageEl = document.createElement('div');
+                packageEl.className = `package ${pkg.is_premium ? 'package-premium' : ''}`;
+                packageEl.innerHTML = `
+                    <div class="package-title">${pkg.title}</div>
+                    <div class="package-price">$${pkg.price}</div>
+                    <div class="package-features">
+                        +${pkg.hash_power} H/s Hash Power<br>
+                        ${pkg.daily_usd ? `Daily $${pkg.daily_usd.toFixed(2)} USD Earning` : `+${pkg.bonus_cs} CS Bonus`}
+                    </div>
+                    <button class="btn ${pkg.is_premium ? 'btn-premium' : ''}" data-package-id="${pkg.id}" ${isPurchased ? 'disabled' : ''}>
+                        ${isPurchased ? 'Purchased' : 'Buy Now'}
+                    </button>`;
+                dom.packagesContainer.appendChild(packageEl);
+            });
+        };
+        
+        const buyPackage = (packageId) => {
+            const pkg = PACKAGES.find(p => p.id === packageId);
+            if (!pkg || state.purchasedPackages.includes(packageId)) return;
+            
+            if (state.usdBalance < pkg.price) {
+                showNotification('Insufficient USD balance. Please deposit.', 'error');
+                switchTab('deposit');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to purchase the ${pkg.title} for $${pkg.price}?`)) {
+                return;
+            }
+
+            state.usdBalance -= pkg.price;
+            state.hashPower += pkg.hash_power;
+            if (pkg.daily_usd) state.dailyUsdReward += pkg.daily_usd;
+            if (pkg.bonus_cs) {
+                state.csBalance += pkg.bonus_cs;
+                addTransaction('package_bonus_cs', pkg.bonus_cs, `${pkg.title} Bonus`);
+            }
+            
+            state.purchasedPackages.push(packageId);
+            addTransaction('package_purchase', -pkg.price, `${pkg.title} Purchase`);
+            
+            showNotification(`${pkg.title} purchased successfully!`, 'success');
+            updateUI();
+            initializePackages();
+        };
+
+        const handleDeposit = async () => {
+            const amount = parseFloat(dom.depositAmountInput.value);
+            const transactionHash = sanitizeInput(dom.transactionHashInput.value.trim());
+            
+            if (!amount || amount <= 0) { 
+                showNotification('Please enter a valid amount.', 'error'); 
+                return; 
+            }
+            
+            if (amount < 1) {
+                showNotification('Minimum deposit amount is $1.', 'error');
+                return;
+            }
+
+            dom.submitDepositBtn.disabled = true;
+            dom.submitDepositBtn.textContent = 'Submitting...';
+
+            try {
+                await db.collection('deposits').add({
+                    userId: state.userId,
+                    amount: amount,
+                    transactionHash: transactionHash,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showNotification(`Deposit request for $${amount.toFixed(2)} submitted.`, 'success');
+                dom.depositAmountInput.value = '';
+                dom.transactionHashInput.value = '';
+            } catch (error) {
+                console.error("Error submitting deposit request:", error);
+                showNotification("Error submitting request. Try again.", "error");
+            } finally {
+                dom.submitDepositBtn.disabled = false;
+                dom.submitDepositBtn.textContent = 'Submit Deposit Request';
+            }
+        };
+
+        const handleWithdraw = async () => {
+            const amount = parseFloat(dom.withdrawAmountInput.value);
+            const address = sanitizeInput(dom.usdtAddressInput.value.trim());
+
+            if (!amount || amount < CONFIG.MIN_WITHDRAWAL) { 
+                showNotification(`Minimum withdrawal is $${CONFIG.MIN_WITHDRAWAL}.`, 'error'); 
+                return; 
+            }
+            if (amount > state.usdBalance) { 
+                showNotification('Insufficient USD balance.', 'error'); 
+                return; 
+            }
+            if (!address || address.length < 26) { 
+                showNotification('Please enter a valid USDT TRC20 address.', 'error'); 
+                return; 
+            }
+
+            if (!confirm(`Are you sure you want to withdraw $${amount.toFixed(2)} to ${address}?`)) {
+                return;
+            }
+
+            dom.withdrawBtn.disabled = true;
+            dom.withdrawBtn.textContent = 'Processing...';
+
+            try {
+                await db.collection('withdrawals').add({
+                    userId: state.userId,
+                    amount: amount,
+                    usdtAddress: address,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                addTransaction('withdrawal_request', -amount, 'Withdrawal Request', 'pending');
+                
+                showNotification(`Withdrawal request for $${amount.toFixed(2)} submitted.`, 'success');
+                dom.withdrawAmountInput.value = '';
+                dom.usdtAddressInput.value = '';
+            } catch (error) {
+                console.error("Error submitting withdrawal request:", error);
+                showNotification("Error processing withdrawal. Try again.", "error");
+            } finally {
+                dom.withdrawBtn.disabled = false;
+                dom.withdrawBtn.textContent = 'Request Withdraw';
+            }
+        };
+        
+        const registerReferral = async (referrerId) => {
+            console.log(`[Referral] Attempting to register referral for referrer: ${referrerId}`);
+            try {
+                if (referrerId === state.userId) {
+                    console.log(`[Referral] User cannot refer themselves. Skipping.`);
+                    return;
+                }
+
+                if (state.referredBy) {
+                    console.log(`[Referral] User already referred by: ${state.referredBy}. Skipping.`);
+                    return;
+                }
+
+                const referrerDoc = await db.collection('users').doc(referrerId).get();
+                if (!referrerDoc.exists) {
+                    console.error(`[Referral] Error: Referrer with ID ${referrerId} does not exist.`);
+                    return;
+                }
+
+                console.log(`[Referral] All conditions met. Processing referral...`);
+
+                await db.collection('users').doc(referrerId).update({
+                    referralCount: firebase.firestore.FieldValue.increment(1),
+                    lastReferralTime: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log(`[Referral] Successfully incremented referral count for ${referrerId}`);
+
+                state.referredBy = referrerId;
+                
+                const referralBonus = 5;
+                await db.collection('users').doc(referrerId).update({
+                    csBalance: firebase.firestore.FieldValue.increment(referralBonus)
+                });
+                
+                console.log(`[Referral] Added ${referralBonus} CS bonus to referrer`);
+
+                state.csBalance += 2;
+                addTransaction('referral_bonus', 2, 'Welcome Bonus for Referral');
+
+                await saveUserData();
+                
+                console.log(`[Referral] Referral process completed successfully!`);
+                showNotification(`🎉 Welcome! You received 2 CS bonus for joining via referral!`, 'success');
+
+            } catch (error) {
+                console.error("Error during referral registration process:", error);
+                showNotification("Referral registration failed, but you can continue.", "warning");
+            }
+        };
+
+        // =============================================
+        // Navigation and UI Management
+        // =============================================
+        const switchTab = (tabId) => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            const targetTab = document.querySelector(`[data-tab="${tabId}"]`);
+            const targetContent = document.getElementById(`${tabId}-tab`);
+            
+            if (targetTab && targetContent) {
+                targetTab.classList.add('active');
+                targetContent.classList.add('active');
+                
+                if (tabId === 'history' && state.transactions.length === 0) {
+                    loadTransactionHistory();
+                }
+            }
+        };
+
+        const setupTabScrolling = () => {
+            const tabs = dom.tabsContainer;
+            const checkScroll = () => {
+                const hasOverflow = tabs.scrollWidth > tabs.clientWidth;
+                dom.tabNavLeft.classList.toggle('visible', hasOverflow && tabs.scrollLeft > 0);
+                dom.tabNavRight.classList.toggle('visible', hasOverflow && tabs.scrollLeft < tabs.scrollWidth - tabs.clientWidth -1);
+            };
+            tabs.addEventListener('scroll', checkScroll);
+            window.addEventListener('resize', checkScroll);
+            dom.tabNavLeft.addEventListener('click', () => tabs.scrollBy({ left: -150, behavior: 'smooth' }));
+            dom.tabNavRight.addEventListener('click', () => tabs.scrollBy({ left: 150, behavior: 'smooth' }));
+            checkScroll();
+        };
+
+        const setupEventListeners = () => {
+            dom.tapButton.addEventListener('click', handleTap);
+            dom.submitDepositBtn.addEventListener('click', handleDeposit);
+            dom.withdrawBtn.addEventListener('click', handleWithdraw);
+            
+            dom.copyAddressBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(dom.depositAddressTextElement.textContent);
+                showNotification('Address copied to clipboard!', 'success');
+            });
+            
+            dom.copyRefBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(state.referralLink);
+                showNotification('Referral link copied!', 'success');
+            });
+            
+            dom.shareLinkBtn.addEventListener('click', () => {
+                try {
+                    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(state.referralLink)}&text=${encodeURIComponent('Join Coin Switch and earn crypto rewards!')}`);
+                } catch (e) {
+                    navigator.clipboard.writeText(state.referralLink);
+                    showNotification('Referral link copied! Share it with friends.', 'info');
+                }
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            dom.packagesContainer.addEventListener('click', (e) => {
+                if (e.target.matches('button[data-package-id]')) {
+                    buyPackage(e.target.dataset.packageId);
+                }
+            });
+        };
+
+        // =============================================
+        // Account Management
+        // =============================================
+        const enhancedAccountRecovery = async (telegramId) => {
+            try {
+                console.log("🔍 Account recovery started... Telegram ID:", telegramId);
+                
+                const usersSnapshot = await db.collection('users')
+                    .where('telegramId', '==', telegramId)
+                    .limit(1)
+                    .get();
+
+                if (!usersSnapshot.empty) {
+                    const userDoc = usersSnapshot.docs[0];
+                    const userData = userDoc.data();
+                    
+                    console.log("✅ Account found with Telegram ID:", userDoc.id);
+                    return {
+                        success: true,
+                        userId: userDoc.id,
+                        userData: userData,
+                        source: 'telegram_id'
+                    };
+                }
+
+                const possibleUid = `tg_${telegramId}`;
+                const userDoc = await db.collection('users').doc(possibleUid).get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    console.log("✅ Account found with Firebase UID:", possibleUid);
+                    return {
+                        success: true,
+                        userId: possibleUid,
+                        userData: userData,
+                        source: 'firebase_uid'
+                    };
+                }
+
+                console.log("❌ No account found");
+                return { 
+                    success: false, 
+                    error: "No account found with provided Telegram ID" 
+                };
+                
+            } catch (error) {
+                console.error("Recovery error:", error);
+                return { 
+                    success: false, 
+                    error: error.message 
+                };
+            }
+        };
+
+        const createNewUser = async (telegramUser) => {
+            const newUserId = `tg_${telegramUser.id}`;
+            
+            const newUserData = {
+                csBalance: 10,
+                usdBalance: 0,
+                hashPower: 10,
+                dailyUsdReward: 0,
+                purchasedPackages: [],
+                referralCount: 0,
+                userLevel: 1,
+                userXP: 0,
+                lastPassiveUpdate: Date.now(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                telegramId: telegramUser.id,
+                telegramUsername: telegramUser.username || '',
+                firstName: telegramUser.first_name || '',
+                lastName: telegramUser.last_name || '',
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            await db.collection('users').doc(newUserId).set(newUserData);
+            state.userId = newUserId;
+            Object.assign(state, newUserData);
+            
+            addTransaction('welcome_bonus', 10, 'Welcome Bonus');
+            showNotification("New account created! You received 10 CS bonus!", "success");
+        };
+
+        // =============================================
+        // Application Initialization
+        // =============================================
+        const showApp = () => {
+            updateLoadingProgress(100, 'Ready!');
+            
+            if (state.userId) {
+                state.referralLink = `https://t.me/Defidiggermining_bot?start=ref_${state.userId.replace('tg_', '')}`;
+                if (dom.referralLinkTextElement) {
+                    dom.referralLinkTextElement.textContent = state.referralLink;
+                }
+            }
+            
+            initializePackages();
+            loadPackages();
+            updateUI();
+            setupTabScrolling();
+            setupEventListeners();
+
+            try {
+                tg.ready();
+                tg.expand();
+            } catch (e) {
+                console.log("Telegram expand failed");
+            }
+            
+            setTimeout(() => {
+                if (dom.loadingScreen && dom.mainContent) {
+                    dom.loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        dom.loadingScreen.style.display = 'none';
+                        dom.mainContent.style.display = 'block';
+                        showNotification("App loaded successfully!", "success");
+                    }, 300);
+                }
+            }, 300);
+
+            setInterval(passiveMining, 5000);
+            setInterval(updateTapCooldown, 100);
+            setInterval(saveUserData, 60000);
+        };
+
+        const showBasicApp = () => {
+            updateLoadingProgress(100, 'Basic mode');
+            
+            initializePackages();
+            updateUI();
+            setupTabScrolling();
+            setupEventListeners();
+            
+            setTimeout(() => {
+                if (dom.loadingScreen && dom.mainContent) {
+                    dom.loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        dom.loadingScreen.style.display = 'none';
+                        dom.mainContent.style.display = 'block';
+                        showNotification("Please open via Telegram for full features", "warning");
+                    }, 300);
+                }
+            }, 300);
+
+            setInterval(passiveMining, 5000);
+            setInterval(updateTapCooldown, 100);
+            setInterval(saveUserData, 60000);
+        };
+
+        const init = async () => {
+            try {
+                debugUserSession();
+                
+                const tg = window.Telegram.WebApp;
+                const telegramUser = tg.initDataUnsafe.user;
+                
+                if (!telegramUser || !telegramUser.id) {
+                    console.error("Telegram user data not available");
+                    showNotification("Telegram user data not found. Please reopen the app.", "error");
+                    showBasicApp();
+                    return;
+                }
+
+                console.log("Telegram User:", telegramUser);
+
+                const recoveryResult = await enhancedAccountRecovery(telegramUser.id);
+                
+                if (recoveryResult.success) {
+                    state.userId = recoveryResult.userId;
+                    Object.assign(state, recoveryResult.userData);
+                    console.log("✅ Account successfully recovered!");
+                    showNotification(`Your account has been recovered! Balance: ${state.csBalance} CS`, "success");
+                } else {
+                    console.log("Creating new user...");
+                    await createNewUser(telegramUser);
+                }
+
+                showApp();
+
+            } catch (error) {
+                console.error("Initialization error:", error);
+                updateLoadingProgress(100, "Error loading app");
+                showNotification("Could not load your account. Please restart.", "error");
+                
+                setTimeout(() => {
+                    showBasicApp();
+                }, 2000);
+            }
+        };
+
+        // =============================================
+        // Start Application
+        // =============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+        });
+    </script>
+</body>
+</html>

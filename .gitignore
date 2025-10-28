@@ -1,0 +1,33 @@
+# Firebase
+.firebase/
+database.rules.json
+storage.rules
+.firebaserc
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Dotenv environment variables file
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Other
+.DS_Store
+Thumbs.db
+
+# Google Cloud Service Account Credentials (Prevent accidental commit)
+functions/serviceAccountKey.json

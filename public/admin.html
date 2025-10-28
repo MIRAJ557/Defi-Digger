@@ -1,0 +1,2911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Switch - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+   <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <div class="logo-container" style="justify-content: center; margin-bottom: 20px;">
+                <div class="logo"><i class="fas fa-coins"></i></div>
+                <div class="logo-text">Coin Switch</div>
+            </div>
+            <div class="login-title">Admin Panel</div>
+            <div class="form-group">
+                <label for="admin-email">Email</label>
+                <input type="email" id="admin-email" class="form-control" placeholder="admin@example.com">
+            </div>
+            <div class="form-group">
+                <label for="admin-password">Password</label>
+                <input type="password" id="admin-password" class="form-control" placeholder="Enter your password">
+            </div>
+            <button id="login-btn" class="btn" style="width: 100%; padding: 12px; margin-top: 10px;">Login</button>
+            <div id="login-error" style="color: var(--danger); text-align: center; margin-top: 15px; display: none;">
+                Invalid credentials. Please try again.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Admin Panel (Hidden until login) -->
+    <div id="admin-panel" style="display: none;">
+        <div class="container">
+            <header>
+                <div class="logo-container">
+                    <div class="logo"><i class="fas fa-coins"></i></div>
+                    <div class="logo-text">Coin Switch Admin</div>
+                </div>
+                <p class="subtitle">Manage Users, Transactions, and System Settings</p>
+                <div style="position: absolute; top: 20px; right: 20px;">
+                    <button id="logout-btn" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </header>
+
+            <!-- Dashboard Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-users">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-deposits">$0</div>
+                    <div class="stat-label">Total Deposits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-withdrawals">$0</div>
+                    <div class="stat-label">Total Withdrawals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pending-requests">0</div>
+                    <div class="stat-label">Pending Requests</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="users">Users</div>
+                    <div class="tab" data-tab="deposits">Deposit Requests</div>
+                    <div class="tab" data-tab="withdrawals">Withdrawal Requests</div>
+                    <div class="tab" data-tab="wallet-management">Wallet Management</div>
+                    <div class="tab" data-tab="broadcast">Broadcast</div>
+                    <div class="tab" data-tab="settings">Settings</div>
+                </div>
+
+                <!-- Users Tab -->
+                <div class="tab-content active" id="users-tab">
+                    <div class="search-container">
+                        <input type="text" id="user-search" class="search-box" placeholder="Search by Telegram ID, Username, Email, Name, Phone...">
+                        <select id="user-filter" class="filter-select">
+                            <option value="all">All Users</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <button id="refresh-users" class="btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Telegram Info</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>CS Balance</th>
+                                    <th>USD Balance</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Users will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="users-pagination">
+                        <!-- Pagination will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Deposits Tab -->
+                <div class="tab-content" id="deposits-tab">
+                    <div class="search-container">
+                        <input type="text" id="deposit-search" class="search-box" placeholder="Search deposits by user ID or transaction hash">
+                        <select id="deposit-filter" class="filter-select">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <button id="refresh-deposits" class="btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>User ID</th>
+                                    <th>Telegram Info</th>
+                                    <th>Amount</th>
+                                    <th>Transaction Hash</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deposits-table-body">
+                                <!-- Deposits will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="deposits-pagination">
+                        <!-- Pagination will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Withdrawals Tab -->
+                <div class="tab-content" id="withdrawals-tab">
+                    <div class="search-container">
+                        <input type="text" id="withdrawal-search" class="search-box" placeholder="Search withdrawals by user ID or address">
+                        <select id="withdrawal-filter" class="filter-select">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <button id="refresh-withdrawals" class="btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>User ID</th>
+                                    <th>Telegram Info</th>
+                                    <th>Amount</th>
+                                    <th>USDT Address</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="withdrawals-table-body">
+                                <!-- Withdrawals will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="withdrawals-pagination">
+                        <!-- Pagination will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Wallet Management Tab -->
+                <div class="tab-content" id="wallet-management-tab">
+                    <h3 style="margin-bottom: 20px;">User Wallet Management</h3>
+                    
+                    <div class="search-container">
+                        <input type="text" id="wallet-user-search" class="search-box" placeholder="Search user by Telegram ID, Username, or User ID">
+                        <button id="search-wallet-user" class="btn"><i class="fas fa-search"></i> Search User</button>
+                    </div>
+                    
+                    <div id="wallet-user-details" style="display: none; margin-bottom: 25px;">
+                        <div class="stat-card">
+                            <h4 style="margin-bottom: 15px;">User Wallet Details</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div>
+                                    <strong>User ID:</strong> <span id="wallet-user-id"></span>
+                                </div>
+                                <div>
+                                    <strong>Telegram:</strong> <span id="wallet-telegram-info"></span>
+                                </div>
+                                <div>
+                                    <strong>Current CS Balance:</strong> <span id="current-cs-balance">0.0000 CS</span>
+                                </div>
+                                <div>
+                                    <strong>Current USD Balance:</strong> <span id="current-usd-balance">$0.00</span>
+                                </div>
+                                <div>
+                                    <strong>Hash Power:</strong> <span id="current-hash-power">0 H/s</span>
+                                </div>
+                                <div>
+                                    <strong>Name:</strong> <span id="wallet-user-name">N/A</span>
+                                </div>
+                            </div>
+                            
+                            <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px;">
+                                <h5 style="margin-bottom: 15px;">Adjust Wallet Balance</h5>
+                                
+                                <div class="form-group">
+                                    <label for="adjust-cs-amount">CS Token Amount (+/-)</label>
+                                    <input type="number" id="adjust-cs-amount" class="form-control" placeholder="e.g., 10 or -5" step="0.0001">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="adjust-usd-amount">USD Amount (+/-)</label>
+                                    <input type="number" id="adjust-usd-amount" class="form-control" placeholder="e.g., 50 or -20" step="0.01">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="adjust-hash-power">Hash Power (+/-)</label>
+                                    <input type="number" id="adjust-hash-power" class="form-control" placeholder="e.g., 100 or -50" step="10">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="adjust-reason">Reason for Adjustment</label>
+                                    <textarea id="adjust-reason" class="form-control" placeholder="Enter reason for this adjustment" rows="3"></textarea>
+                                </div>
+                                
+                                <button id="apply-wallet-adjustment" class="btn btn-success" style="width: 100%;">
+                                    <i class="fas fa-calculator"></i> Apply Adjustment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="wallet-adjustment-history" style="margin-top: 25px;">
+                        <h4 style="margin-bottom: 15px;">Recent Wallet Adjustments</h4>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>User ID</th>
+                                        <th>Telegram</th>
+                                        <th>CS Change</th>
+                                        <th>USD Change</th>
+                                        <th>Hash Change</th>
+                                        <th>Reason</th>
+                                        <th>Admin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wallet-history-table-body">
+                                    <!-- Adjustment history will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+
+            <!-- Broadcast Tab -->
+<div class="tab-content" id="broadcast-tab">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">Broadcast Message to All Users</h3>
+        <button class="btn btn-outline-info btn-sm" id="refresh-broadcast-stats">
+            <i class="fas fa-sync-alt"></i> Refresh Stats
+        </button>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card h-100">
+                <div class="stat-icon text-primary">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h5>Total Users</h5>
+                    <p id="broadcast-total-users" class="stat-number">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card h-100">
+                <div class="stat-icon text-success">
+                    <i class="fab fa-telegram"></i>
+                </div>
+                <div class="stat-content">
+                    <h5>Telegram Users</h5>
+                    <p id="broadcast-telegram-users" class="stat-number">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card h-100">
+                <div class="stat-icon text-warning">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div class="stat-content">
+                    <h5>Last Broadcast</h5>
+                    <p id="last-broadcast" class="stat-number">Never</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card h-100">
+                <div class="stat-icon text-info">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-content">
+                    <h5>Success Rate</h5>
+                    <p id="broadcast-success-rate" class="stat-number">0%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Broadcast Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Create Broadcast Message</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group mb-3">
+                <label for="broadcast-message" class="form-label">Message Content</label>
+                <textarea id="broadcast-message" class="form-control" 
+                          placeholder="Enter your broadcast message here..." rows="6"></textarea>
+                <div class="form-text">Maximum 4000 characters allowed.</div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="broadcast-type" class="form-label">Message Type</label>
+                        <select id="broadcast-type" class="form-select">
+                            <option value="text">Plain Text</option>
+                            <option value="markdown">Markdown Format</option>
+                            <option value="html">HTML Format</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="broadcast-priority" class="form-label">Priority</label>
+                        <select id="broadcast-priority" class="form-select">
+                            <option value="low">Low</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label">Message Preview</label>
+                <div id="broadcast-preview" class="preview-box">
+                    <div class="preview-placeholder">
+                        <i class="fas fa-eye"></i>
+                        <p>Preview will appear here...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4 flex-wrap">
+                <button id="preview-broadcast" class="btn btn-warning flex-fill">
+                    <i class="fas fa-eye me-2"></i> Preview Message
+                </button>
+                <button id="test-broadcast" class="btn btn-info flex-fill">
+                    <i class="fas fa-vial me-2"></i> Send Test
+                </button>
+                <button id="send-broadcast" class="btn btn-success flex-fill">
+                    <i class="fas fa-paper-plane me-2"></i> Send Broadcast
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div id="broadcast-progress" class="card mb-4" style="display: none;">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Broadcast Progress</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Progress:</span>
+                <span id="progress-text">0% (0/0)</span>
+            </div>
+            <div class="progress mb-3" style="height: 20px;">
+                <div id="progress-fill" class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            
+            <div class="row text-center">
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="p-2 border rounded">
+                        <h6 class="mb-1">Successful</h6>
+                        <span id="success-count" class="text-success fw-bold">0</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="p-2 border rounded">
+                        <h6 class="mb-1">Failed</h6>
+                        <span id="failed-count" class="text-danger fw-bold">0</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="p-2 border rounded">
+                        <h6 class="mb-1">Pending</h6>
+                        <span id="pending-count" class="text-warning fw-bold">0</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="p-2 border rounded">
+                        <h6 class="mb-1">Total</h6>
+                        <span id="total-count" class="text-primary fw-bold">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="broadcast-status" class="mt-3 text-center"></div>
+            
+            <div class="mt-3 text-center">
+                <button id="cancel-broadcast" class="btn btn-danger btn-sm">
+                    <i class="fas fa-stop-circle me-1"></i> Cancel Broadcast
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Broadcast History -->
+    <div class="card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Broadcast History</h5>
+            <button class="btn btn-outline-light btn-sm" id="refresh-history">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Message Preview</th>
+                            <th>Type</th>
+                            <th>Sent To</th>
+                            <th>Success</th>
+                            <th>Failed</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="broadcast-history-table-body">
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p>No broadcast history available</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- Settings Tab -->
+                <div class="tab-content" id="settings-tab">
+                    <h3 style="margin-bottom: 20px;">System Settings</h3>
+                    <div class="form-group">
+                        <label for="cs-token-price">CS Token Price (USD)</label>
+                        <input type="number" id="cs-token-price" class="form-control" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="tap-reward">Tap Reward (CS Tokens)</label>
+                        <input type="number" id="tap-reward" class="form-control" step="0.1" min="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="min-withdrawal">Minimum Withdrawal (USD)</label>
+                        <input type="number" id="min-withdrawal" class="form-control" step="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="hash-to-cs">Hash to CS Conversion Rate</label>
+                        <input type="number" id="hash-to-cs" class="form-control" step="0.01" min="0.01">
+                    </div>
+                    <button id="save-settings" class="btn btn-success"><i class="fas fa-save"></i> Save Settings</button>
+                    <!-- ★★★ এই কোডটুকু Package Management এর ঠিক উপরে যোগ করুন ★★★ -->
+<h3 style="margin: 40px 0 15px; border-top: 1px solid #444; padding-top: 30px;">
+    Data Migration
+</h3>
+<p style="font-size: 14px; margin-bottom: 15px; color: #ffc107;">
+    <b>Warning:</b> Use this button to fix old user accounts automatically. This process will move data from old `tg_...` IDs to new correct IDs. <br>
+    <b>Run this only ONCE.</b>
+</p>
+<button id="run-migration-btn" class="btn btn-danger" style="background: var(--danger);">
+    <i class="fas fa-database"></i> Run User Data Migration
+</button>
+
+
+<h3 style="margin: 30px 0 15px;">Package Management</h3>
+                    
+                    <h3 style="margin: 30px 0 15px;">Package Management</h3>
+                    <div id="packages-list">
+                        <!-- Packages will be populated by JavaScript -->
+                    </div>
+                    <button id="add-package" class="btn" style="margin-top: 15px;"><i class="fas fa-plus"></i> Add New Package</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">User Details</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="user-details">
+                <!-- User details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Deposit Details Modal -->
+    <div id="deposit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Deposit Request Details</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="deposit-details">
+                <!-- Deposit details will be populated by JavaScript -->
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="approve-deposit" class="btn btn-success" style="flex: 1;">Approve</button>
+                <button id="reject-deposit" class="btn btn-danger" style="flex: 1;">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdrawal Details Modal -->
+    <div id="withdrawal-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Withdrawal Request Details</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="withdrawal-details">
+                <!-- Withdrawal details will be populated by JavaScript -->
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="approve-withdrawal" class="btn btn-success" style="flex: 1;">Approve</button>
+                <button id="reject-withdrawal" class="btn btn-danger" style="flex: 1;">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Package Modal -->
+    <div id="package-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="package-modal-title">Add Package</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="package-title">Package Title</label>
+                <input type="text" id="package-title" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="package-price">Price (USD)</label>
+                <input type="number" id="package-price" class="form-control" step="1" min="1">
+            </div>
+            <div class="form-group">
+                <label for="package-hash">Hash Power</label>
+                <input type="number" id="package-hash" class="form-control" step="10" min="10">
+            </div>
+            <div class="form-group">
+                <label for="package-bonus">Bonus CS Tokens</label>
+                <input type="number" id="package-bonus" class="form-control" step="1" min="0">
+            </div>
+            <div class="form-group">
+                <label for="package-daily">Daily USD Earning</label>
+                <input type="number" id="package-daily" class="form-control" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="package-premium"> Premium Package
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="save-package" class="btn btn-success" style="flex: 1;">Save</button>
+                <button id="delete-package" class="btn btn-danger" style="flex: 1; display: none;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Adjustment Confirmation Modal -->
+    <div id="wallet-confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Confirm Wallet Adjustment</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="wallet-confirm-details">
+                <!-- Confirmation details will be populated here -->
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="confirm-wallet-adjustment" class="btn btn-success" style="flex: 1;">Confirm</button>
+                <button id="cancel-wallet-adjustment" class="btn btn-danger" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i id="notification-icon" class="fas fa-check-circle"></i>
+        <span id="notification-text">Notification Text</span>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB57oI5BOktgge6UJSWsfiAytUY0YgXNSA",
+            authDomain: "defi-digger.firebaseapp.com",
+            projectId: "defi-digger",
+            storageBucket: "defi-digger.firebasestorage.app",
+            messagingSenderId: "194287488251",
+            appId: "1:194287488251:web:5a46a5825b95917859b45e",
+            measurementId: "G-RZ8TLE355C"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Admin authentication configuration
+        auth.useDeviceLanguage();
+
+        // Set persistence to local to keep admin logged in
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+        // App Check activation
+        try {
+            const appCheck = firebase.appCheck();
+            appCheck.activate(
+                '6LcmZtYrAAAAANg5TqckGikiEYURbnBzs85wqHrj',
+                true
+            );
+            console.log('Firebase App Check activated successfully.');
+        } catch (error) {
+            console.error('Error activating Firebase App Check:', error);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const dom = {
+                loginScreen: document.getElementById('login-screen'),
+                adminPanel: document.getElementById('admin-panel'),
+                loginBtn: document.getElementById('login-btn'),
+                logoutBtn: document.getElementById('logout-btn'),
+                adminEmail: document.getElementById('admin-email'),
+                adminPassword: document.getElementById('admin-password'),
+                loginError: document.getElementById('login-error'),
+                
+                // Stats
+                totalUsers: document.getElementById('total-users'),
+                totalDeposits: document.getElementById('total-deposits'),
+                totalWithdrawals: document.getElementById('total-withdrawals'),
+                pendingRequests: document.getElementById('pending-requests'),
+                
+                // Tabs
+                tabs: document.querySelectorAll('.tab'),
+                tabContents: document.querySelectorAll('.tab-content'),
+                
+                // Users tab
+                userSearch: document.getElementById('user-search'),
+                userFilter: document.getElementById('user-filter'),
+                refreshUsers: document.getElementById('refresh-users'),
+                usersTableBody: document.getElementById('users-table-body'),
+                usersPagination: document.getElementById('users-pagination'),
+                
+                // Deposits tab
+                depositSearch: document.getElementById('deposit-search'),
+                depositFilter: document.getElementById('deposit-filter'),
+                refreshDeposits: document.getElementById('refresh-deposits'),
+                depositsTableBody: document.getElementById('deposits-table-body'),
+                depositsPagination: document.getElementById('deposits-pagination'),
+                
+                // Withdrawals tab
+                withdrawalSearch: document.getElementById('withdrawal-search'),
+                withdrawalFilter: document.getElementById('withdrawal-filter'),
+                refreshWithdrawals: document.getElementById('refresh-withdrawals'),
+                withdrawalsTableBody: document.getElementById('withdrawals-table-body'),
+                withdrawalsPagination: document.getElementById('withdrawals-pagination'),
+                
+                // Settings tab
+                csTokenPrice: document.getElementById('cs-token-price'),
+                tapReward: document.getElementById('tap-reward'),
+                minWithdrawal: document.getElementById('min-withdrawal'),
+                hashToCs: document.getElementById('hash-to-cs'),
+                saveSettings: document.getElementById('save-settings'),
+                packagesList: document.getElementById('packages-list'),
+                addPackage: document.getElementById('add-package'),
+                
+                // Modals
+                userModal: document.getElementById('user-modal'),
+                depositModal: document.getElementById('deposit-modal'),
+                withdrawalModal: document.getElementById('withdrawal-modal'),
+                packageModal: document.getElementById('package-modal'),
+                walletConfirmModal: document.getElementById('wallet-confirm-modal'),
+                
+                // Modal elements
+                userDetails: document.getElementById('user-details'),
+                depositDetails: document.getElementById('deposit-details'),
+                withdrawalDetails: document.getElementById('withdrawal-details'),
+                approveDeposit: document.getElementById('approve-deposit'),
+                rejectDeposit: document.getElementById('reject-deposit'),
+                approveWithdrawal: document.getElementById('approve-withdrawal'),
+                rejectWithdrawal: document.getElementById('reject-withdrawal'),
+                
+                // Package modal elements
+                packageModalTitle: document.getElementById('package-modal-title'),
+                packageTitle: document.getElementById('package-title'),
+                packagePrice: document.getElementById('package-price'),
+                packageHash: document.getElementById('package-hash'),
+                packageBonus: document.getElementById('package-bonus'),
+                packageDaily: document.getElementById('package-daily'),
+                packagePremium: document.getElementById('package-premium'),
+                savePackage: document.getElementById('save-package'),
+                deletePackage: document.getElementById('delete-package'),
+                
+                // Wallet Management elements
+                searchWalletUser: document.getElementById('search-wallet-user'),
+                walletUserSearch: document.getElementById('wallet-user-search'),
+                walletUserDetails: document.getElementById('wallet-user-details'),
+                walletUserId: document.getElementById('wallet-user-id'),
+                walletTelegramInfo: document.getElementById('wallet-telegram-info'),
+                walletUserName: document.getElementById('wallet-user-name'),
+                currentCsBalance: document.getElementById('current-cs-balance'),
+                currentUsdBalance: document.getElementById('current-usd-balance'),
+                currentHashPower: document.getElementById('current-hash-power'),
+                adjustCsAmount: document.getElementById('adjust-cs-amount'),
+                adjustUsdAmount: document.getElementById('adjust-usd-amount'),
+                adjustHashPower: document.getElementById('adjust-hash-power'),
+                adjustReason: document.getElementById('adjust-reason'),
+                applyWalletAdjustment: document.getElementById('apply-wallet-adjustment'),
+                walletConfirmDetails: document.getElementById('wallet-confirm-details'),
+                confirmWalletAdjustment: document.getElementById('confirm-wallet-adjustment'),
+                cancelWalletAdjustment: document.getElementById('cancel-wallet-adjustment'),
+                walletHistoryTableBody: document.getElementById('wallet-history-table-body'),
+
+                // ... আপনার আগের dom এলিমেন্টগুলো এখানে থাকবে ...
+
+// ...
+// Broadcast elements (সঠিক সংস্করণ)
+refreshBroadcastStatsBtn: document.getElementById('refresh-broadcast-stats'),
+broadcastTotalUsers: document.getElementById('broadcast-total-users'),
+broadcastTelegramUsers: document.getElementById('broadcast-telegram-users'),
+lastBroadcast: document.getElementById('last-broadcast'),
+broadcastSuccessRate: document.getElementById('broadcast-success-rate'),
+broadcastMessageTextarea: document.getElementById('broadcast-message'), // <= এটি সঠিক নাম
+broadcastTypeSelect: document.getElementById('broadcast-type'),       // <= এটি সঠিক নাম
+broadcastPrioritySelect: document.getElementById('broadcast-priority'), // <= এটি সঠিক নাম
+broadcastPreviewBox: document.getElementById('broadcast-preview'),     // <= এটি সঠিক নাম
+previewBroadcastBtn: document.getElementById('preview-broadcast'),
+testBroadcastBtn: document.getElementById('test-broadcast'),
+sendBroadcastBtn: document.getElementById('send-broadcast'),
+broadcastProgressSection: document.getElementById('broadcast-progress'),
+progressText: document.getElementById('progress-text'),
+progressFill: document.getElementById('progress-fill'),
+successCount: document.getElementById('success-count'),
+failedCount: document.getElementById('failed-count'),
+pendingCount: document.getElementById('pending-count'),
+totalCount: document.getElementById('total-count'),
+broadcastStatus: document.getElementById('broadcast-status'),
+cancelBroadcastBtn: document.getElementById('cancel-broadcast'),
+broadcastHistoryTableBody: document.getElementById('broadcast-history-table-body'),
+refreshHistoryBtn: document.getElementById('refresh-history'),
+// ...
+                
+                // Notification
+                notification: document.getElementById('notification'),
+                notificationIcon: document.getElementById('notification-icon'),
+                notificationText: document.getElementById('notification-text')
+            };
+
+            // Global variables
+            let currentUser = null;
+            let currentDeposit = null;
+            let currentWithdrawal = null;
+            let currentPackage = null;
+            let currentWalletUser = null;
+            let settings = {};
+            let packages = [];
+            let allUsers = [];
+            
+            // Pagination variables
+            const itemsPerPage = 10;
+            let currentUsersPage = 1;
+            let currentDepositsPage = 1;
+            let currentWithdrawalsPage = 1;
+            let filteredUsers = [];
+            let filteredDeposits = [];
+            let filteredWithdrawals = [];
+
+            // Initialize the app
+            const init = () => {
+                // Check if user is already logged in
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        currentUser = user;
+                        showAdminPanel();
+                        loadData();
+                    } else {
+                        showLoginScreen();
+                    }
+                });
+
+                // Event listeners
+                setupEventListeners();
+            };
+
+            // Show login screen
+            const showLoginScreen = () => {
+                dom.loginScreen.style.display = 'flex';
+                dom.adminPanel.style.display = 'none';
+            };
+
+            // Show admin panel
+            const showAdminPanel = () => {
+                dom.loginScreen.style.display = 'none';
+                dom.adminPanel.style.display = 'block';
+            };
+
+            // Setup event listeners
+            const setupEventListeners = () => {
+                // Login
+                dom.loginBtn.addEventListener('click', handleLogin);
+                dom.adminPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleLogin();
+                });
+                
+                // Logout
+                dom.logoutBtn.addEventListener('click', handleLogout);
+                
+                // Tab switching
+                dom.tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const tabId = tab.getAttribute('data-tab');
+                        switchTab(tabId);
+                    });
+                });
+                
+                // Modal close buttons
+                document.querySelectorAll('.close-modal').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.modal').forEach(modal => {
+                            modal.style.display = 'none';
+                        });
+                    });
+                });
+                
+                // Close modal when clicking outside
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.style.display = 'none';
+                        }
+                    });
+                });
+                
+                // Refresh buttons
+                dom.refreshUsers.addEventListener('click', loadUsers);
+                dom.refreshDeposits.addEventListener('click', loadDeposits);
+                dom.refreshWithdrawals.addEventListener('click', loadWithdrawals);
+                
+                // Search and filter
+                dom.userSearch.addEventListener('input', filterUsers);
+                dom.userFilter.addEventListener('change', filterUsers);
+                dom.depositSearch.addEventListener('input', filterDeposits);
+                dom.depositFilter.addEventListener('change', filterDeposits);
+                dom.withdrawalSearch.addEventListener('input', filterWithdrawals);
+                dom.withdrawalFilter.addEventListener('change', filterWithdrawals);
+                
+                // Settings
+                dom.saveSettings.addEventListener('click', saveSettings);
+
+                // ★★★ এই কোডটুকু setupEventListeners ফাংশনের ভেতরে যোগ করুন ★★★
+
+const runMigrationBtn = document.getElementById('run-migration-btn');
+if (runMigrationBtn) {
+    runMigrationBtn.addEventListener('click', async () => {
+        if (!confirm('Are you ABSOLUTELY SURE you want to start the data migration? This cannot be undone and should only be run once.')) {
+            return;
+        }
+
+        const functions = firebase.functions();
+        const migrateUserData = functions.httpsCallable('migrateUserData');
+
+        try {
+            showNotification('Starting migration... This may take a few minutes. Do not close this page.', 'info');
+            runMigrationBtn.disabled = true;
+            runMigrationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Migrating... Please Wait...';
+
+            const result = await migrateUserData();
+
+            console.log('Migration Result:', result.data);
+            showNotification(result.data.message, 'success');
+            alert('Migration Finished! Check the notification for results.');
+
+        } catch (error) {
+            console.error('Migration failed:', error);
+            showNotification(`Migration failed: ${error.message}`, 'error');
+            alert(`Migration Failed! Check the developer console (F12) for error details.`);
+        } finally {
+            runMigrationBtn.disabled = false;
+            runMigrationBtn.innerHTML = '<i class="fas fa-database"></i> Run User Data Migration';
+        }
+    });
+}
+// ★★★ 여기까지 যোগ করুন ★★★
+                
+                // Package management
+                dom.addPackage.addEventListener('click', () => {
+                    openPackageModal();
+                });
+                dom.savePackage.addEventListener('click', savePackage);
+                dom.deletePackage.addEventListener('click', deletePackage);
+                
+                // Wallet Management
+                setupWalletManagement();
+
+                 // Broadcast listeners
+                dom.refreshBroadcastStatsBtn.addEventListener('click', loadBroadcastStats);
+                dom.broadcastMessageTextarea.addEventListener('input', updateBroadcastPreview);
+                dom.broadcastTypeSelect.addEventListener('change', updateBroadcastPreview);
+                dom.previewBroadcastBtn.addEventListener('click', previewBroadcastMessage);
+                dom.sendBroadcastBtn.addEventListener('click', sendBroadcastToUsers);
+                dom.testBroadcastBtn.addEventListener('click', handleTestBroadcast);
+                dom.refreshHistoryBtn.addEventListener('click', loadBroadcastHistory);
+                dom.cancelBroadcastBtn.addEventListener('click', cancelBroadcast);
+            };
+
+            // ===================================================================
+// Enhanced Broadcast Functions
+// ===================================================================
+
+/**
+ * Load broadcast statistics including user counts and previous broadcast info
+ */
+const loadBroadcastStats = async () => {
+    try {
+        showNotification('Loading broadcast statistics...', 'info');
+        
+        // Get all users
+        const usersSnapshot = await db.collection('users').get();
+        const totalUsers = usersSnapshot.size;
+        
+        // Get users with Telegram IDs
+        const telegramUsersSnapshot = await db.collection('users')
+            .where('telegramId', '!=', null)
+            .get();
+        const telegramUsers = telegramUsersSnapshot.size;
+        
+        // Get last broadcast info
+        const lastBroadcastSnapshot = await db.collection('broadcastHistory')
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+            .get();
+        
+        // Update UI
+        dom.broadcastTotalUsers.textContent = totalUsers.toLocaleString();
+        dom.broadcastTelegramUsers.textContent = telegramUsers.toLocaleString();
+        
+        if (!lastBroadcastSnapshot.empty) {
+            const lastBroadcast = lastBroadcastSnapshot.docs[0].data();
+            const date = new Date(lastBroadcast.timestamp.seconds * 1000);
+            dom.lastBroadcast.textContent = date.toLocaleString();
+            
+            // Calculate success rate
+            if (lastBroadcast.total > 0) {
+                const successRate = ((lastBroadcast.success / lastBroadcast.total) * 100).toFixed(1);
+                dom.broadcastSuccessRate.textContent = `${successRate}%`;
+            } else {
+                dom.broadcastSuccessRate.textContent = '0%';
+            }
+        } else {
+            dom.lastBroadcast.textContent = 'Never';
+            dom.broadcastSuccessRate.textContent = '0%';
+        }
+        
+        showNotification('Broadcast statistics loaded successfully', 'success');
+    } catch (error) {
+        console.error("Error loading broadcast stats:", error);
+        showNotification('Failed to load broadcast statistics', 'error');
+    }
+};
+
+/**
+ * Update the broadcast message preview based on message type
+ */
+const updateBroadcastPreview = () => {
+    const message = dom.broadcastMessageTextarea.value;
+    const messageType = dom.broadcastTypeSelect.value;
+    const previewBox = dom.broadcastPreviewBox;
+
+    if (!message.trim()) {
+        previewBox.innerHTML = `
+            <div class="preview-placeholder">
+                <i class="fas fa-eye"></i>
+                <p>Preview will appear here...</p>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        let previewContent = '';
+        
+        switch (messageType) {
+            case 'html':
+                previewContent = message;
+                break;
+                
+            case 'markdown':
+                // Convert markdown to HTML for preview
+                previewContent = convertMarkdownToHTML(message);
+                break;
+                
+            case 'text':
+            default:
+                // For plain text, just display as is with line breaks
+                previewContent = message.replace(/\n/g, '<br>');
+                break;
+        }
+        
+        previewBox.innerHTML = previewContent;
+    } catch (error) {
+        console.error('Error generating preview:', error);
+        previewBox.innerHTML = `
+            <div class="preview-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error generating preview. Please check your message format.</p>
+            </div>
+        `;
+    }
+};
+
+/**
+ * Convert markdown to HTML for preview
+ */
+const convertMarkdownToHTML = (markdown) => {
+    return markdown
+        // Bold text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Italic text
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        // Inline code
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        // Line breaks
+        .replace(/\n/g, '<br>')
+        // Basic headers (limited support)
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>');
+};
+
+/**
+ * Preview the broadcast message
+ */
+const previewBroadcastMessage = () => {
+    if (!dom.broadcastMessageTextarea.value.trim()) {
+        showNotification('Please enter a message to preview', 'warning');
+        return;
+    }
+    
+    updateBroadcastPreview();
+    showNotification('Message preview updated', 'success');
+};
+
+/**
+ * Send a test broadcast to a limited set of users or admin accounts
+ */
+const handleTestBroadcast = async () => {
+    const message = dom.broadcastMessageTextarea.value.trim();
+    const messageType = dom.broadcastTypeSelect.value;
+    const priority = dom.broadcastPrioritySelect.value;
+
+    if (!message) {
+        showNotification('Please enter a message to test', 'error');
+        return;
+    }
+
+    try {
+        showNotification('Sending test broadcast...', 'info');
+        
+        // Get test users (could be admin accounts or a small subset)
+        const testUsersSnapshot = await db.collection('users')
+            .where('isTestUser', '==', true)
+            .limit(5)
+            .get();
+
+        if (testUsersSnapshot.empty) {
+            showNotification('No test users found. Using first 5 users instead.', 'warning');
+            // Fallback to first 5 users
+            const allUsersSnapshot = await db.collection('users').limit(5).get();
+            await sendBroadcastToUserList(allUsersSnapshot.docs, message, messageType, priority, true);
+        } else {
+            await sendBroadcastToUserList(testUsersSnapshot.docs, message, messageType, priority, true);
+        }
+        
+        showNotification('Test broadcast sent successfully', 'success');
+    } catch (error) {
+        console.error('Error sending test broadcast:', error);
+        showNotification(`Test broadcast failed: ${error.message}`, 'error');
+    }
+};
+
+/**
+ * Send broadcast to all users with progress tracking
+ */
+const sendBroadcastToUsers = async () => {
+    const message = dom.broadcastMessageTextarea.value.trim();
+    const messageType = dom.broadcastTypeSelect.value;
+    const priority = dom.broadcastPrioritySelect.value;
+
+    if (!message) {
+        showNotification('Please enter a message to broadcast', 'error');
+        return;
+    }
+
+    if (message.length > 4000) {
+        showNotification('Message exceeds 4000 character limit', 'error');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to send this message to ALL ${dom.broadcastTotalUsers.textContent} users? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        // Initialize broadcast progress
+        initializeBroadcastProgress();
+        
+        // Get all users with Telegram IDs
+        const usersSnapshot = await db.collection('users')
+            .where('telegramId', '!=', null)
+            .get();
+
+        if (usersSnapshot.empty) {
+            showNotification('No users with Telegram IDs found', 'warning');
+            resetBroadcastUI();
+            return;
+        }
+
+        const totalUsers = usersSnapshot.size;
+        dom.totalCount.textContent = totalUsers;
+        dom.pendingCount.textContent = totalUsers;
+        
+        // Create broadcast record
+        const broadcastId = await createBroadcastRecord(message, messageType, priority, totalUsers);
+        
+        // Send messages with progress tracking
+        await sendBroadcastToUserList(usersSnapshot.docs, message, messageType, priority, false, broadcastId);
+        
+        // Finalize broadcast
+        await finalizeBroadcast(broadcastId);
+        
+        showNotification(`Broadcast completed! Success: ${dom.successCount.textContent}, Failed: ${dom.failedCount.textContent}`, 'success');
+        
+        // Refresh stats and history
+        setTimeout(() => {
+            loadBroadcastStats();
+            loadBroadcastHistory();
+            resetBroadcastUI();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error in broadcast process:', error);
+        showNotification(`Broadcast failed: ${error.message}`, 'error');
+        resetBroadcastUI();
+    }
+};
+
+/**
+ * Initialize the broadcast progress UI
+ */
+const initializeBroadcastProgress = () => {
+    dom.broadcastProgressSection.style.display = 'block';
+    dom.progressFill.style.width = '0%';
+    dom.progressText.textContent = '0%';
+    dom.successCount.textContent = '0';
+    dom.failedCount.textContent = '0';
+    dom.pendingCount.textContent = '0';
+    dom.totalCount.textContent = '0';
+    dom.broadcastStatus.innerHTML = '';
+    
+    dom.sendBroadcastBtn.disabled = true;
+    dom.sendBroadcastBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
+    
+    dom.cancelBroadcastBtn.disabled = false;
+};
+
+/**
+ * Reset broadcast UI after completion or cancellation
+ */
+const resetBroadcastUI = () => {
+    dom.broadcastProgressSection.style.display = 'none';
+    dom.sendBroadcastBtn.disabled = false;
+    dom.sendBroadcastBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Broadcast';
+    dom.broadcastMessageTextarea.value = '';
+    updateBroadcastPreview();
+};
+
+/**
+ * Create a broadcast record in Firestore
+ */
+const createBroadcastRecord = async (message, messageType, priority, totalUsers) => {
+    const broadcastData = {
+        message: message,
+        messageType: messageType,
+        priority: priority,
+        total: totalUsers,
+        success: 0,
+        failed: 0,
+        pending: totalUsers,
+        status: 'in_progress',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        adminId: currentUser.uid,
+        adminEmail: currentUser.email
+    };
+    
+    const docRef = await db.collection('broadcastHistory').add(broadcastData);
+    return docRef.id;
+};
+
+/**
+ * Send broadcast to a list of users with progress tracking
+ */
+const sendBroadcastToUserList = async (userDocs, message, messageType, priority, isTest = false, broadcastId = null) => {
+    let successCount = 0;
+    let failedCount = 0;
+    const totalUsers = userDocs.length;
+    
+    // Update progress more frequently for better UX
+    const progressUpdateInterval = Math.max(1, Math.floor(totalUsers / 20));
+    
+    for (let i = 0; i < userDocs.length; i++) {
+        // Check if broadcast was cancelled
+        if (dom.cancelBroadcastBtn.disabled) {
+            break;
+        }
+        
+        const userDoc = userDocs[i];
+        const userData = userDoc.data();
+        
+        try {
+            // Send message to user via Telegram
+            await sendTelegramMessage(userData.telegramId, message, messageType);
+            
+            successCount++;
+            
+            // Log successful delivery if not a test
+            if (!isTest && broadcastId) {
+                await logMessageDelivery(broadcastId, userDoc.id, 'success');
+            }
+        } catch (error) {
+            console.error(`Failed to send to user ${userDoc.id}:`, error);
+            failedCount++;
+            
+            // Log failed delivery if not a test
+            if (!isTest && broadcastId) {
+                await logMessageDelivery(broadcastId, userDoc.id, 'failed', error.message);
+            }
+        }
+        
+        // Update progress UI periodically
+        if (i % progressUpdateInterval === 0 || i === totalUsers - 1) {
+            const progress = Math.round(((i + 1) / totalUsers) * 100);
+            
+            dom.progressFill.style.width = `${progress}%`;
+            dom.progressText.textContent = `${progress}% (${i + 1}/${totalUsers})`;
+            dom.successCount.textContent = successCount;
+            dom.failedCount.textContent = failedCount;
+            dom.pendingCount.textContent = totalUsers - (i + 1);
+            
+            // Add status message for larger broadcasts
+            if (totalUsers > 50 && i % (progressUpdateInterval * 5) === 0) {
+                const statusMessage = document.createElement('div');
+                statusMessage.textContent = `Processed ${i + 1} of ${totalUsers} users...`;
+                statusMessage.style.fontSize = '0.9em';
+                statusMessage.style.marginTop = '5px';
+                statusMessage.style.color = 'var(--text-secondary)';
+                dom.broadcastStatus.appendChild(statusMessage);
+                
+                // Limit status messages to last 5
+                if (dom.broadcastStatus.children.length > 5) {
+                    dom.broadcastStatus.removeChild(dom.broadcastStatus.firstChild);
+                }
+            }
+        }
+        
+        // Small delay to avoid hitting rate limits
+        if (!isTest) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    
+    // Update final counts
+    dom.successCount.textContent = successCount;
+    dom.failedCount.textContent = failedCount;
+    dom.pendingCount.textContent = 0;
+    dom.progressFill.style.width = '100%';
+    dom.progressText.textContent = `100% (${totalUsers}/${totalUsers})`;
+    
+    return { success: successCount, failed: failedCount };
+};
+
+/**
+ * Send message to a user via Telegram
+ */
+const sendTelegramMessage = async (telegramId, message, messageType) => {
+    // This would integrate with your Telegram bot API
+    // Implementation depends on your Telegram bot setup
+    
+    // Example implementation using a Cloud Function
+    const sendMessageFunction = firebase.functions().httpsCallable('sendTelegramMessage');
+    const result = await sendMessageFunction({
+        telegramId: telegramId,
+        message: message,
+        messageType: messageType
+    });
+    
+    if (!result.data.success) {
+        throw new Error(result.data.error || 'Failed to send Telegram message');
+    }
+    
+    return result.data;
+};
+
+/**
+ * Log message delivery status
+ */
+const logMessageDelivery = async (broadcastId, userId, status, error = null) => {
+    const deliveryLog = {
+        broadcastId: broadcastId,
+        userId: userId,
+        status: status,
+        error: error,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    await db.collection('broadcastDeliveryLogs').add(deliveryLog);
+};
+
+/**
+ * Finalize broadcast by updating the record
+ */
+const finalizeBroadcast = async (broadcastId) => {
+    const successCount = parseInt(dom.successCount.textContent);
+    const failedCount = parseInt(dom.failedCount.textContent);
+    const totalCount = parseInt(dom.totalCount.textContent);
+    
+    await db.collection('broadcastHistory').doc(broadcastId).update({
+        success: successCount,
+        failed: failedCount,
+        pending: 0,
+        status: 'completed',
+        completedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+};
+
+/**
+ * Cancel an ongoing broadcast
+ */
+const cancelBroadcast = async () => {
+    if (confirm('Are you sure you want to cancel the current broadcast?')) {
+        dom.cancelBroadcastBtn.disabled = true;
+        dom.broadcastStatus.innerHTML += '<div style="color: var(--warning)">Broadcast cancellation requested...</div>';
+        
+        // In a real implementation, you would need to track the ongoing broadcast
+        // and have a way to stop it. This is a simplified version.
+        
+        setTimeout(() => {
+            resetBroadcastUI();
+            showNotification('Broadcast cancelled', 'warning');
+        }, 1000);
+    }
+};
+
+/**
+ * Load broadcast history from Firestore
+ */
+const loadBroadcastHistory = async () => {
+    try {
+        const historySnapshot = await db.collection('broadcastHistory')
+            .orderBy('timestamp', 'desc')
+            .limit(20)
+            .get();
+
+        dom.broadcastHistoryTableBody.innerHTML = '';
+
+        if (historySnapshot.empty) {
+            dom.broadcastHistoryTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center">
+                        <i class="fas fa-inbox"></i>
+                        <p>No broadcast history available</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        historySnapshot.forEach(doc => {
+            const broadcast = doc.data();
+            const date = broadcast.timestamp ? 
+                new Date(broadcast.timestamp.seconds * 1000).toLocaleString() : 
+                'N/A';
+                
+            // Shorten message for preview
+            const messagePreview = broadcast.message.length > 50 ? 
+                broadcast.message.substring(0, 50) + '...' : 
+                broadcast.message;
+
+            // Determine status badge
+            let statusBadge = '';
+            if (broadcast.status === 'completed') {
+                statusBadge = '<span class="status-badge status-completed">Completed</span>';
+            } else if (broadcast.status === 'in_progress') {
+                statusBadge = '<span class="status-badge status-pending">In Progress</span>';
+            } else if (broadcast.status === 'cancelled') {
+                statusBadge = '<span class="status-badge status-cancelled">Cancelled</span>';
+            } else {
+                statusBadge = '<span class="status-badge status-unknown">Unknown</span>';
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${date}</td>
+                <td title="${broadcast.message.replace(/"/g, '&quot;')}">${messagePreview}</td>
+                <td>${broadcast.messageType || 'text'}</td>
+                <td>${broadcast.total || 0}</td>
+                <td style="color: var(--success)">${broadcast.success || 0}</td>
+                <td style="color: var(--danger)">${broadcast.failed || 0}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-info view-broadcast-details" data-broadcast-id="${doc.id}">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </td>
+            `;
+            
+            dom.broadcastHistoryTableBody.appendChild(row);
+        });
+
+        // Add event listeners to detail buttons
+        document.querySelectorAll('.view-broadcast-details').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const broadcastId = e.currentTarget.getAttribute('data-broadcast-id');
+                viewBroadcastDetails(broadcastId);
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading broadcast history:', error);
+        dom.broadcastHistoryTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error loading broadcast history</p>
+                </td>
+            </tr>
+        `;
+    }
+};
+
+/**
+ * View detailed information about a specific broadcast
+ */
+const viewBroadcastDetails = async (broadcastId) => {
+    try {
+        const broadcastDoc = await db.collection('broadcastHistory').doc(broadcastId).get();
+        
+        if (!broadcastDoc.exists) {
+            showNotification('Broadcast not found', 'error');
+            return;
+        }
+        
+        const broadcast = broadcastDoc.data();
+        
+        // Get delivery logs for this broadcast
+        const deliveryLogsSnapshot = await db.collection('broadcastDeliveryLogs')
+            .where('broadcastId', '==', broadcastId)
+            .orderBy('timestamp', 'desc')
+            .limit(100)
+            .get();
+        
+        // Create modal content
+        const modalContent = `
+            <div class="broadcast-details">
+                <h4>Broadcast Details</h4>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <strong>Date:</strong> ${broadcast.timestamp ? new Date(broadcast.timestamp.seconds * 1000).toLocaleString() : 'N/A'}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status:</strong> ${broadcast.status || 'Unknown'}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Message Type:</strong> ${broadcast.messageType || 'text'}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Priority:</strong> ${broadcast.priority || 'normal'}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Total Users:</strong> ${broadcast.total || 0}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Successful:</strong> <span style="color: var(--success)">${broadcast.success || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Failed:</strong> <span style="color: var(--danger)">${broadcast.failed || 0}</span>
+                    </div>
+                </div>
+                
+                <div class="message-preview">
+                    <strong>Message:</strong>
+                    <div class="message-content">${broadcast.message}</div>
+                </div>
+                
+                ${deliveryLogsSnapshot.empty ? '' : `
+                    <div class="delivery-logs">
+                        <h5>Recent Delivery Logs (${deliveryLogsSnapshot.size})</h5>
+                        <div class="logs-table">
+                            ${deliveryLogsSnapshot.docs.map(doc => {
+                                const log = doc.data();
+                                return `
+                                    <div class="log-entry ${log.status}">
+                                        <span class="log-user">User: ${log.userId}</span>
+                                        <span class="log-status">${log.status}</span>
+                                        <span class="log-time">${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString() : 'N/A'}</span>
+                                        ${log.error ? `<span class="log-error">Error: ${log.error}</span>` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `}
+            </div>
+        `;
+        
+        // Show in a modal (you would need to implement this)
+        showCustomModal('Broadcast Details', modalContent);
+        
+    } catch (error) {
+        console.error('Error loading broadcast details:', error);
+        showNotification('Failed to load broadcast details', 'error');
+    }
+};
+
+// Initialize broadcast functionality when the tab is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Add event listeners for broadcast functionality
+    if (dom.broadcastMessageTextarea) {
+        dom.broadcastMessageTextarea.addEventListener('input', updateBroadcastPreview);
+    }
+    
+    if (dom.broadcastTypeSelect) {
+        dom.broadcastTypeSelect.addEventListener('change', updateBroadcastPreview);
+    }
+    
+    // Load initial data if on broadcast tab
+    if (window.location.hash === '#broadcast' || document.querySelector('.tab[data-tab="broadcast"]').classList.contains('active')) {
+        loadBroadcastStats();
+        loadBroadcastHistory();
+    }
+});
+
+         // --- নতুন এবং সঠিক handleLogin ফাংশন ---
+            const handleLogin = async () => {
+                const email = dom.adminEmail.value;
+                const password = dom.adminPassword.value;
+                
+                dom.loginError.style.display = 'none';
+
+                try {
+                    // ধাপ ১: প্রথমে ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করানো
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    // ধাপ ২: লগইন সফল হলে, Firestore-এর 'admins' কালেকশনে চেক করা
+                    const adminDocRef = db.collection('admins').doc(user.uid);
+                    const adminDoc = await adminDocRef.get();
+
+                    // ধাপ ৩: চেক করা হচ্ছে ডকুমেন্টটি আছে কিনা এবং তার ভেতরে isAdmin ফিল্ডটি true কিনা
+                    if (adminDoc.exists && adminDoc.data().isAdmin === true) {
+                        // যদি ইউজারটি অ্যাডমিন হয়
+                        currentUser = user;
+                        showNotification('Admin login successful!', 'success');
+                        showAdminPanel();
+                        loadData();
+                    } else {
+                        // যদি ইউজারটি অ্যাডমিন না হয়
+                        auth.signOut(); // তাকে আবার সাইন আউট করে দেওয়া হচ্ছে
+                        dom.loginError.textContent = 'Access denied. You are not an admin.';
+                        dom.loginError.style.display = 'block';
+                        showNotification('Admin access required', 'error');
+                    }
+                } catch (error) {
+                    // যদি ইমেইল/পাসওয়ার্ড ভুল হয় বা অন্য কোনো সমস্যা হয়
+                    dom.loginError.textContent = 'Invalid credentials. Please try again.';
+                    dom.loginError.style.display = 'block';
+                    showNotification('Login failed. Check credentials.', 'error');
+                    console.error('Login Error:', error);
+                }
+            };
+
+            // Handle logout
+            const handleLogout = () => {
+                auth.signOut().then(() => {
+                    currentUser = null;
+                    showLoginScreen();
+                    showNotification('Logged out successfully!', 'success');
+                }).catch((error) => {
+                    console.error('Logout Error:', error);
+                    showNotification('Logout failed.', 'error');
+                });
+            };
+
+            // Switch tabs
+            const switchTab = (tabId) => {
+                // Update active tab
+                dom.tabs.forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.getAttribute('data-tab') === tabId) {
+                        tab.classList.add('active');
+                    }
+                });
+                
+                // Show active tab content
+                dom.tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `${tabId}-tab`) {
+                        content.classList.add('active');
+                    }
+                });
+                
+                // Load data for the tab if needed
+                if (tabId === 'users') {
+                    loadUsers();
+                } else if (tabId === 'deposits') {
+                    loadDeposits();
+                } else if (tabId === 'withdrawals') {
+                    loadWithdrawals();
+                } else if (tabId === 'wallet-management') {
+                    loadWalletAdjustmentHistory();
+                } else if (tabId === 'broadcast') {
+                    loadBroadcastStats();
+                    loadBroadcastHistory();
+                } else if (tabId === 'settings') {
+                    loadSettings(); 
+                }
+            };
+
+            // Load all data
+            const loadData = () => {
+                loadDashboardStats();
+                loadUsers();
+                loadDeposits();
+                loadWithdrawals();
+                loadBroadcastStats();
+                loadSettings();
+            };
+
+            // Load dashboard statistics
+        const loadDashboardStats = async () => {
+            try {
+                // Get total users
+                const usersSnapshot = await db.collection('users').get();
+                dom.totalUsers.textContent = usersSnapshot.size;
+                
+                let totalDeposits = 0;
+                let totalWithdrawals = 0;
+                let pendingRequests = 0;
+                
+                const depositsSnapshot = await db.collection('deposits').where('status', '==', 'approved').get();
+                depositsSnapshot.forEach(doc => {
+                    totalDeposits += doc.data().amount;
+                });
+                
+                const withdrawalsSnapshot = await db.collection('withdrawals').where('status', '==', 'approved').get();
+                withdrawalsSnapshot.forEach(doc => {
+                    totalWithdrawals += doc.data().amount;
+                });
+                
+                const pendingDeposits = await db.collection('deposits').where('status', '==', 'pending').get();
+                const pendingWithdrawals = await db.collection('withdrawals').where('status', '==', 'pending').get();
+                pendingRequests = pendingDeposits.size + pendingWithdrawals.size;
+
+                dom.totalDeposits.textContent = `$${totalDeposits.toFixed(2)}`;
+                dom.totalWithdrawals.textContent = `$${totalWithdrawals.toFixed(2)}`;
+                dom.pendingRequests.textContent = pendingRequests;
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                showNotification('Error loading dashboard statistics', 'error');
+            }
+        };
+
+            // Load users
+            const loadUsers = async () => {
+    try {
+        const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+        allUsers = [];
+        
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            allUsers.push({
+                id: doc.id,
+                email: userData.email || 'N/A',
+                telegramId: userData.telegramId || 'N/A',
+                telegramUsername: userData.telegramUsername || 'N/A',
+                firstName: userData.firstName || 'N/A',
+                lastName: userData.lastName || 'N/A',
+                phone: userData.phone || 'N/A',
+                balance: userData.balance || 0,
+                csBalance: userData.csBalance || 0,
+                usdBalance: userData.usdBalance || 0,
+                hashPower: userData.hashPower || 10,
+                userLevel: userData.userLevel || 1,
+                referralCount: userData.referralCount || 0,
+                createdAt: userData.createdAt || '',
+                ...userData
+            });
+        });
+        
+        filteredUsers = [...allUsers];
+        currentUsersPage = 1;
+        displayUsers();
+        generatePagination(filteredUsers.length, currentUsersPage, 'users');
+    } catch (error) {
+        console.error('Error loading users:', error);
+        showNotification('Error loading users', 'error');
+    }
+};
+
+            // Display users in table
+const displayUsers = () => {
+                dom.usersTableBody.innerHTML = '';
+                
+                const startIndex = (currentUsersPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, filteredUsers.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const user = filteredUsers[i];
+                    const row = document.createElement('tr');
+                    
+                    // টেবিলের কলাম আপডেট করা হলো
+                    row.innerHTML = `
+                        <td>
+                            <div class="user-info">
+                                <strong>${user.telegramUsername || 'N/A'}</strong>
+                                <small>ID: ${user.telegramId || user.id}</small>
+                            </div>
+                        </td>
+                        <td>${user.firstName || ''} ${user.lastName || ''}</td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td>${user.phone || 'N/A'}</td>
+                        <td>${user.csBalance ? user.csBalance.toFixed(4) : '0.0000'} CS</td>
+                        <td>$${user.usdBalance ? user.usdBalance.toFixed(2) : '0.00'}</td>
+                        <td>${user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-warning view-user" data-user-id="${user.id}">View</button>
+                        </td>
+                    `;
+                    
+                    dom.usersTableBody.appendChild(row);
+                }
+                
+                document.querySelectorAll('.view-user').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const userId = btn.getAttribute('data-user-id');
+                        viewUserDetails(userId);
+                    });
+                });
+            };
+            // Filter users
+            const filterUsers = () => {
+                const searchTerm = dom.userSearch.value.toLowerCase();
+                const filterValue = dom.userFilter.value;
+                
+                filteredUsers = allUsers.filter(user => {
+                    const matchesSearch = 
+                        user.id.toLowerCase().includes(searchTerm) ||
+                        (user.telegramId && user.telegramId.toLowerCase().includes(searchTerm)) ||
+                        (user.telegramUsername && user.telegramUsername.toLowerCase().includes(searchTerm)) ||
+                        (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                        (user.firstName && user.firstName.toLowerCase().includes(searchTerm)) ||
+                        (user.lastName && user.lastName.toLowerCase().includes(searchTerm)) ||
+                        (user.phone && user.phone.includes(searchTerm));
+                    
+                    let matchesFilter = true;
+                    
+                    if (filterValue === 'active') {
+                        matchesFilter = user.lastTapTime && (Date.now() - user.lastTapTime < 7 * 24 * 60 * 60 * 1000);
+                    } else if (filterValue === 'inactive') {
+                        matchesFilter = !user.lastTapTime || (Date.now() - user.lastTapTime >= 7 * 24 * 60 * 60 * 1000);
+                    }
+                    
+                    return matchesSearch && matchesFilter;
+                });
+                
+                currentUsersPage = 1;
+                displayUsers();
+                generatePagination(filteredUsers.length, currentUsersPage, 'users');
+            };
+
+            // View user details
+            const viewUserDetails = async (userId) => {
+                try {
+                    const userDoc = await db.collection('users').doc(userId).get();
+                    
+                    if (userDoc.exists) {
+                        const user = userDoc.data();
+                        
+                        dom.userDetails.innerHTML = `
+                            <div style="margin-bottom: 15px;">
+                                <strong>User ID:</strong> ${userId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Telegram ID:</strong> ${user.telegramId || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Telegram Username:</strong> ${user.telegramUsername || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Name:</strong> ${user.firstName || ''} ${user.lastName || ''}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Email:</strong> ${user.email || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Phone:</strong> ${user.phone || 'N/A'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>CS Balance:</strong> ${user.csBalance ? user.csBalance.toFixed(4) : '0.0000'} CS
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>USD Balance:</strong> $${user.usdBalance ? user.usdBalance.toFixed(2) : '0.00'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Hash Power:</strong> ${user.hashPower || 10} H/s
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Level:</strong> ${user.userLevel || 1}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>XP:</strong> ${user.userXP || 0}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Referrals:</strong> ${user.referralCount || 0}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Last Active:</strong> ${user.lastTapTime ? new Date(user.lastTapTime).toLocaleString() : 'Never'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Purchased Packages:</strong> ${user.purchasedPackages ? user.purchasedPackages.join(', ') : 'None'}
+                            </div>
+                        `;
+                        
+                        dom.userModal.style.display = 'flex';
+                    } else {
+                        showNotification('User not found', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error loading user details:', error);
+                    showNotification('Error loading user details', 'error');
+                }
+            };
+
+            // Load deposits
+            const loadDeposits = async () => {
+                try {
+                    const depositsSnapshot = await db.collection('deposits').orderBy('createdAt', 'desc').get();
+                    const deposits = [];
+                    
+                    depositsSnapshot.forEach(doc => {
+                        deposits.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Get user details for each deposit
+                    for (let deposit of deposits) {
+                        try {
+                            const userDoc = await db.collection('users').doc(deposit.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                deposit.telegramId = userData.telegramId || 'N/A';
+                                deposit.telegramUsername = userData.telegramUsername || 'N/A';
+                                deposit.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'N/A';
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user data for deposit:', error);
+                        }
+                    }
+                    
+                    filteredDeposits = deposits;
+                    displayDeposits();
+                    generatePagination(deposits.length, currentDepositsPage, 'deposits');
+                } catch (error) {
+                    console.error('Error loading deposits:', error);
+                    showNotification('Error loading deposits', 'error');
+                }
+            };
+
+            // Display deposits in table
+            const displayDeposits = () => {
+                dom.depositsTableBody.innerHTML = '';
+                
+                const startIndex = (currentDepositsPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, filteredDeposits.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const deposit = filteredDeposits[i];
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${deposit.id}</td>
+                        <td>${deposit.userId}</td>
+                        <td>
+                            <div class="user-info">
+                                <strong>${deposit.telegramUsername}</strong>
+                                <small>ID: ${deposit.telegramId}</small>
+                            </div>
+                        </td>
+                        <td>$${deposit.amount.toFixed(2)}</td>
+                        <td>${deposit.transactionHash || 'N/A'}</td>
+                        <td><span class="status-badge status-${deposit.status}">${deposit.status}</span></td>
+                        <td>${deposit.createdAt ? new Date(deposit.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-warning view-deposit" data-deposit-id="${deposit.id}">View</button>
+                        </td>
+                    `;
+                    
+                    dom.depositsTableBody.appendChild(row);
+                }
+                
+                // Add event listeners to view buttons
+                document.querySelectorAll('.view-deposit').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const depositId = btn.getAttribute('data-deposit-id');
+                        viewDepositDetails(depositId);
+                    });
+                });
+            };
+
+            // Filter deposits
+            const filterDeposits = () => {
+                const searchTerm = dom.depositSearch.value.toLowerCase();
+                const filterValue = dom.depositFilter.value;
+                
+                filteredDeposits = filteredDeposits.filter(deposit => {
+                    const matchesSearch = 
+                        deposit.userId.toLowerCase().includes(searchTerm) || 
+                        (deposit.transactionHash && deposit.transactionHash.toLowerCase().includes(searchTerm)) ||
+                        (deposit.telegramId && deposit.telegramId.toLowerCase().includes(searchTerm)) ||
+                        (deposit.telegramUsername && deposit.telegramUsername.toLowerCase().includes(searchTerm));
+                    const matchesFilter = filterValue === 'all' || deposit.status === filterValue;
+                    
+                    return matchesSearch && matchesFilter;
+                });
+                
+                currentDepositsPage = 1;
+                displayDeposits();
+                generatePagination(filteredDeposits.length, currentDepositsPage, 'deposits');
+            };
+
+            // View deposit details
+            const viewDepositDetails = async (depositId) => {
+                try {
+                    const depositDoc = await db.collection('deposits').doc(depositId).get();
+                    
+                    if (depositDoc.exists) {
+                        const deposit = depositDoc.data();
+                        currentDeposit = { id: depositId, ...deposit };
+                        
+                        // Get user details
+                        let userInfo = 'N/A';
+                        try {
+                            const userDoc = await db.collection('users').doc(deposit.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                userInfo = `
+                                    <strong>Telegram:</strong> ${userData.telegramUsername || 'N/A'} (${userData.telegramId || 'N/A'})<br>
+                                    <strong>Name:</strong> ${userData.firstName || ''} ${userData.lastName || ''}<br>
+                                    <strong>Email:</strong> ${userData.email || 'N/A'}<br>
+                                    <strong>Phone:</strong> ${userData.phone || 'N/A'}
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user details:', error);
+                        }
+                        
+                        dom.depositDetails.innerHTML = `
+                            <div style="margin-bottom: 15px;">
+                                <strong>Request ID:</strong> ${depositId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>User ID:</strong> ${deposit.userId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>User Details:</strong><br>${userInfo}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Amount:</strong> $${deposit.amount.toFixed(2)}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Transaction Hash:</strong> ${deposit.transactionHash || 'Not provided'}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Status:</strong> <span class="status-badge status-${deposit.status}">${deposit.status}</span>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Date:</strong> ${deposit.createdAt ? new Date(deposit.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
+                            </div>
+                        `;
+                        
+                        // Show/hide action buttons based on status
+                        if (deposit.status === 'pending') {
+                            dom.approveDeposit.style.display = 'block';
+                            dom.rejectDeposit.style.display = 'block';
+                        } else {
+                            dom.approveDeposit.style.display = 'none';
+                            dom.rejectDeposit.style.display = 'none';
+                        }
+                        
+                        dom.depositModal.style.display = 'flex';
+                    } else {
+                        showNotification('Deposit request not found', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error loading deposit details:', error);
+                    showNotification('Error loading deposit details', 'error');
+                }
+            };
+
+            // Approve deposit
+            dom.approveDeposit.addEventListener('click', async () => {
+                if (!currentDeposit) return;
+                
+                try {
+                    // Update deposit status
+                    await db.collection('deposits').doc(currentDeposit.id).update({
+                        status: 'approved',
+                        approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Update user's USD balance
+                    const userDoc = await db.collection('users').doc(currentDeposit.userId).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        await db.collection('users').doc(currentDeposit.userId).update({
+                            usdBalance: (userData.usdBalance || 0) + currentDeposit.amount
+                        });
+                    }
+                    
+                    showNotification('Deposit approved successfully!', 'success');
+                    dom.depositModal.style.display = 'none';
+                    loadDeposits();
+                    loadDashboardStats();
+                } catch (error) {
+                    console.error('Error approving deposit:', error);
+                    showNotification('Error approving deposit', 'error');
+                }
+            });
+
+            // Reject deposit
+            dom.rejectDeposit.addEventListener('click', async () => {
+                if (!currentDeposit) return;
+                
+                try {
+                    await db.collection('deposits').doc(currentDeposit.id).update({
+                        status: 'rejected',
+                        rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    showNotification('Deposit rejected successfully!', 'success');
+                    dom.depositModal.style.display = 'none';
+                    loadDeposits();
+                    loadDashboardStats();
+                } catch (error) {
+                    console.error('Error rejecting deposit:', error);
+                    showNotification('Error rejecting deposit', 'error');
+                }
+            });
+
+            // Load withdrawals
+            const loadWithdrawals = async () => {
+                try {
+                    const withdrawalsSnapshot = await db.collection('withdrawals').orderBy('createdAt', 'desc').get();
+                    const withdrawals = [];
+                    
+                    withdrawalsSnapshot.forEach(doc => {
+                        withdrawals.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Get user details for each withdrawal
+                    for (let withdrawal of withdrawals) {
+                        try {
+                            const userDoc = await db.collection('users').doc(withdrawal.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                withdrawal.telegramId = userData.telegramId || 'N/A';
+                                withdrawal.telegramUsername = userData.telegramUsername || 'N/A';
+                                withdrawal.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'N/A';
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user data for withdrawal:', error);
+                        }
+                    }
+                    
+                    filteredWithdrawals = withdrawals;
+                    displayWithdrawals();
+                    generatePagination(withdrawals.length, currentWithdrawalsPage, 'withdrawals');
+                } catch (error) {
+                    console.error('Error loading withdrawals:', error);
+                    showNotification('Error loading withdrawals', 'error');
+                }
+            };
+
+            // Display withdrawals in table
+            const displayWithdrawals = () => {
+                dom.withdrawalsTableBody.innerHTML = '';
+                
+                const startIndex = (currentWithdrawalsPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, filteredWithdrawals.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const withdrawal = filteredWithdrawals[i];
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${withdrawal.id}</td>
+                        <td>${withdrawal.userId}</td>
+                        <td>
+                            <div class="user-info">
+                                <strong>${withdrawal.telegramUsername}</strong>
+                                <small>ID: ${withdrawal.telegramId}</small>
+                            </div>
+                        </td>
+                        <td>$${withdrawal.amount.toFixed(2)}</td>
+                        <td>${withdrawal.usdtAddress}</td>
+                        <td><span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span></td>
+                        <td>${withdrawal.createdAt ? new Date(withdrawal.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-warning view-withdrawal" data-withdrawal-id="${withdrawal.id}">View</button>
+                        </td>
+                    `;
+                    
+                    dom.withdrawalsTableBody.appendChild(row);
+                }
+                
+                // Add event listeners to view buttons
+                document.querySelectorAll('.view-withdrawal').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const withdrawalId = btn.getAttribute('data-withdrawal-id');
+                        viewWithdrawalDetails(withdrawalId);
+                    });
+                });
+            };
+
+            // Filter withdrawals
+            const filterWithdrawals = () => {
+                const searchTerm = dom.withdrawalSearch.value.toLowerCase();
+                const filterValue = dom.withdrawalFilter.value;
+                
+                filteredWithdrawals = filteredWithdrawals.filter(withdrawal => {
+                    const matchesSearch = 
+                        withdrawal.userId.toLowerCase().includes(searchTerm) || 
+                        withdrawal.usdtAddress.toLowerCase().includes(searchTerm) ||
+                        (withdrawal.telegramId && withdrawal.telegramId.toLowerCase().includes(searchTerm)) ||
+                        (withdrawal.telegramUsername && withdrawal.telegramUsername.toLowerCase().includes(searchTerm));
+                    const matchesFilter = filterValue === 'all' || withdrawal.status === filterValue;
+                    
+                    return matchesSearch && matchesFilter;
+                });
+                
+                currentWithdrawalsPage = 1;
+                displayWithdrawals();
+                generatePagination(filteredWithdrawals.length, currentWithdrawalsPage, 'withdrawals');
+            };
+
+            // View withdrawal details
+            const viewWithdrawalDetails = async (withdrawalId) => {
+                try {
+                    const withdrawalDoc = await db.collection('withdrawals').doc(withdrawalId).get();
+                    
+                    if (withdrawalDoc.exists) {
+                        const withdrawal = withdrawalDoc.data();
+                        currentWithdrawal = { id: withdrawalId, ...withdrawal };
+                        
+                        // Get user details
+                        let userInfo = 'N/A';
+                        try {
+                            const userDoc = await db.collection('users').doc(withdrawal.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                userInfo = `
+                                    <strong>Telegram:</strong> ${userData.telegramUsername || 'N/A'} (${userData.telegramId || 'N/A'})<br>
+                                    <strong>Name:</strong> ${userData.firstName || ''} ${userData.lastName || ''}<br>
+                                    <strong>Email:</strong> ${userData.email || 'N/A'}<br>
+                                    <strong>Phone:</strong> ${userData.phone || 'N/A'}
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user details:', error);
+                        }
+                        
+                        dom.withdrawalDetails.innerHTML = `
+                            <div style="margin-bottom: 15px;">
+                                <strong>Request ID:</strong> ${withdrawalId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>User ID:</strong> ${withdrawal.userId}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>User Details:</strong><br>${userInfo}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Amount:</strong> $${withdrawal.amount.toFixed(2)}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>USDT Address:</strong> ${withdrawal.usdtAddress}
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Status:</strong> <span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <strong>Date:</strong> ${withdrawal.createdAt ? new Date(withdrawal.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
+                            </div>
+                        `;
+                        
+                        // Show/hide action buttons based on status
+                        if (withdrawal.status === 'pending') {
+                            dom.approveWithdrawal.style.display = 'block';
+                            dom.rejectWithdrawal.style.display = 'block';
+                        } else {
+                            dom.approveWithdrawal.style.display = 'none';
+                            dom.rejectWithdrawal.style.display = 'none';
+                        }
+                        
+                        dom.withdrawalModal.style.display = 'flex';
+                    } else {
+                        showNotification('Withdrawal request not found', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error loading withdrawal details:', error);
+                    showNotification('Error loading withdrawal details', 'error');
+                }
+            };
+
+            // Approve withdrawal
+            dom.approveWithdrawal.addEventListener('click', async () => {
+                if (!currentWithdrawal) return;
+                
+                try {
+                    // Update withdrawal status
+                    await db.collection('withdrawals').doc(currentWithdrawal.id).update({
+                        status: 'approved',
+                        approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Deduct from user's USD balance
+                    const userDoc = await db.collection('users').doc(currentWithdrawal.userId).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        await db.collection('users').doc(currentWithdrawal.userId).update({
+                            usdBalance: (userData.usdBalance || 0) - currentWithdrawal.amount
+                        });
+                    }
+                    
+                    showNotification('Withdrawal approved successfully!', 'success');
+                    dom.withdrawalModal.style.display = 'none';
+                    loadWithdrawals();
+                    loadDashboardStats();
+                } catch (error) {
+                    console.error('Error approving withdrawal:', error);
+                    showNotification('Error approving withdrawal', 'error');
+                }
+            });
+
+            // Reject withdrawal
+            dom.rejectWithdrawal.addEventListener('click', async () => {
+                if (!currentWithdrawal) return;
+                
+                try {
+                    await db.collection('withdrawals').doc(currentWithdrawal.id).update({
+                        status: 'rejected',
+                        rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    showNotification('Withdrawal rejected successfully!', 'success');
+                    dom.withdrawalModal.style.display = 'none';
+                    loadWithdrawals();
+                    loadDashboardStats();
+                } catch (error) {
+                    console.error('Error rejecting withdrawal:', error);
+                    showNotification('Error rejecting withdrawal', 'error');
+                }
+            });
+
+            // Wallet Management Functions
+            const setupWalletManagement = () => {
+                // Event listeners
+                dom.searchWalletUser.addEventListener('click', searchWalletUser);
+                dom.walletUserSearch.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') searchWalletUser();
+                });
+                dom.applyWalletAdjustment.addEventListener('click', prepareWalletAdjustment);
+                dom.confirmWalletAdjustment.addEventListener('click', executeWalletAdjustment);
+                dom.cancelWalletAdjustment.addEventListener('click', () => {
+                    dom.walletConfirmModal.style.display = 'none';
+                });
+            };
+
+       // Global variable to hold the listener, so we can stop it later
+            let userListener = null;
+
+            // Search user for wallet management (Real-time version)
+           const searchWalletUser = () => {
+                const searchTerm = dom.walletUserSearch.value.trim();
+                if (!searchTerm) {
+                    showNotification('Please enter a user ID, Telegram ID, or Username', 'error');
+                    return;
+                }
+
+                // যদি আগের কোনো রিয়েল-টাইম লিসেনার চালু থাকে, তবে সেটি বন্ধ করে দেওয়া হচ্ছে
+                if (userListener) {
+                    userListener(); 
+                }
+
+                let finalDocId = null;
+                let query = null;
+
+                // নতুন এবং উন্নত সার্চ লজিক:
+                // ১. যদি সার্চ টার্মটি শুধুমাত্র সংখ্যা হয় (যেমন: 123456789)
+                if (/^\d+$/.test(searchTerm)) {
+                    finalDocId = `tg_${searchTerm}`;
+                    console.log(`Searching by constructed Telegram Document ID: ${finalDocId}`);
+                
+                // ২. যদি সার্চ টার্ম 'tg_' দিয়ে শুরু হয় (সম্পূর্ণ ডকুমেন্ট আইডি)
+                } else if (searchTerm.startsWith('tg_')) {
+                    finalDocId = searchTerm;
+                    console.log(`Searching by full Document ID: ${finalDocId}`);
+
+                // ৩. যদি সার্চ টার্ম '@' দিয়ে শুরু হয় বা কোনো স্পেস না থাকে (ইউজারনেম)
+                } else if (searchTerm.startsWith('@') || !searchTerm.includes(' ')) {
+                    const username = searchTerm.startsWith('@') ? searchTerm.substring(1) : searchTerm;
+                    query = db.collection('users').where('telegramUsername', '==', username);
+                    console.log(`Searching by username: ${username}`);
+                
+                // ৪. অন্যথায়, এটিকে পুরানো Firebase UID হিসেবে খোঁজার চেষ্টা করা হবে (ফলব্যাক)
+                } else {
+                    finalDocId = searchTerm;
+                    console.log(`Fallback search by old Firebase UID: ${finalDocId}`);
+                }
+
+                // যদি আমরা সরাসরি ডকুমেন্ট আইডি পেয়ে যাই (টেলিগ্রাম আইডি থেকে)
+                if (finalDocId) {
+                    const userDocRef = db.collection('users').doc(finalDocId);
+                    userListener = userDocRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            displayWalletUserDetails({ id: doc.id, ...doc.data() });
+                        } else {
+                            handleUserNotFound();
+                        }
+                    }, handleSnapshotError);
+                    return; // ফাংশন এখানেই শেষ
+                }
+
+                // যদি ইউজারনেম দিয়ে খুঁজতে হয়
+                if (query) {
+                    userListener = query.onSnapshot((snapshot) => {
+                        if (!snapshot.empty) {
+                            const userDoc = snapshot.docs[0]; // প্রথম ফলাফলটি দেখানো হচ্ছে
+                            displayWalletUserDetails({ id: userDoc.id, ...userDoc.data() });
+                        } else {
+                            handleUserNotFound();
+                        }
+                    }, handleSnapshotError);
+                }
+            };
+            
+            // Helper function to display user details
+            const displayWalletUserDetails = (userData) => {
+                currentWalletUser = userData;
+                
+                dom.walletUserId.textContent = currentWalletUser.id;
+                dom.walletTelegramInfo.textContent = `${currentWalletUser.telegramUsername || 'N/A'} (${currentWalletUser.telegramId || 'N/A'})`;
+                dom.walletUserName.textContent = `${currentWalletUser.firstName || ''} ${currentWalletUser.lastName || ''}`.trim() || 'N/A';
+                dom.currentCsBalance.textContent = `${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS`;
+                dom.currentUsdBalance.textContent = `$${currentWalletUser.usdBalance ? currentWalletUser.usdBalance.toFixed(2) : '0.00'}`;
+                dom.currentHashPower.textContent = `${currentWalletUser.hashPower || 10} H/s`;
+                
+                dom.walletUserDetails.style.display = 'block';
+                console.log("User data updated in real-time.");
+            };
+
+            // Helper function to handle when user is not found
+            const handleUserNotFound = () => {
+                showNotification('User not found', 'error');
+                dom.walletUserDetails.style.display = 'none';
+                if (userListener) {
+                    userListener(); // Stop listening if user is not found
+                    userListener = null;
+                }
+            };
+            
+            // Helper function to handle snapshot errors
+            const handleSnapshotError = (error) => {
+                console.error('Error listening to user data:', error);
+                showNotification('Error fetching user data', 'error');
+                if (userListener) {
+                    userListener();
+                    userListener = null;
+                }
+            };
+
+            // Prepare wallet adjustment
+            const prepareWalletAdjustment = () => {
+                if (!currentWalletUser) {
+                    showNotification('Please search for a user first', 'error');
+                    return;
+                }
+
+                const csChange = parseFloat(dom.adjustCsAmount.value) || 0;
+                const usdChange = parseFloat(dom.adjustUsdAmount.value) || 0;
+                const hashChange = parseInt(dom.adjustHashPower.value) || 0;
+                const reason = dom.adjustReason.value.trim();
+
+                if (csChange === 0 && usdChange === 0 && hashChange === 0) {
+                    showNotification('Please enter at least one adjustment value', 'error');
+                    return;
+                }
+
+                if (!reason) {
+                    showNotification('Please enter a reason for this adjustment', 'error');
+                    return;
+                }
+
+                // Calculate new balances
+                const newCsBalance = (currentWalletUser.csBalance || 0) + csChange;
+                const newUsdBalance = (currentWalletUser.usdBalance || 0) + usdChange;
+                const newHashPower = (currentWalletUser.hashPower || 10) + hashChange;
+
+                // Show confirmation modal
+                dom.walletConfirmDetails.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <strong>User ID:</strong> ${currentWalletUser.id}
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>Telegram:</strong> ${currentWalletUser.telegramUsername || 'N/A'} (${currentWalletUser.telegramId || 'N/A'})
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>CS Balance:</strong> ${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS 
+                        → <span style="color: ${csChange >= 0 ? 'var(--success)' : 'var(--danger)'}">${newCsBalance.toFixed(4)} CS</span>
+                        (${csChange >= 0 ? '+' : ''}${csChange.toFixed(4)})
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>USD Balance:</strong> $${currentWalletUser.usdBalance ? currentWalletUser.usdBalance.toFixed(2) : '0.00'} 
+                        → <span style="color: ${usdChange >= 0 ? 'var(--success)' : 'var(--danger)'}">$${newUsdBalance.toFixed(2)}</span>
+                        (${usdChange >= 0 ? '+' : ''}$${usdChange.toFixed(2)})
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>Hash Power:</strong> ${currentWalletUser.hashPower || 10} H/s 
+                        → <span style="color: ${hashChange >= 0 ? 'var(--success)' : 'var(--danger)'}">${newHashPower} H/s</span>
+                        (${hashChange >= 0 ? '+' : ''}${hashChange})
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>Reason:</strong> ${reason}
+                    </div>
+                `;
+
+                dom.walletConfirmModal.style.display = 'flex';
+            };
+
+            // Execute wallet adjustment
+            const executeWalletAdjustment = async () => {
+                const csChange = parseFloat(dom.adjustCsAmount.value) || 0;
+                const usdChange = parseFloat(dom.adjustUsdAmount.value) || 0;
+                const hashChange = parseInt(dom.adjustHashPower.value) || 0;
+                const reason = dom.adjustReason.value.trim();
+
+                try {
+                    // Update user wallet
+                    const updateData = {};
+                    
+                    if (csChange !== 0) {
+                        updateData.csBalance = firebase.firestore.FieldValue.increment(csChange);
+                    }
+                    
+                    if (usdChange !== 0) {
+                        updateData.usdBalance = firebase.firestore.FieldValue.increment(usdChange);
+                    }
+                    
+                    if (hashChange !== 0) {
+                        updateData.hashPower = firebase.firestore.FieldValue.increment(hashChange);
+                    }
+
+                    await db.collection('users').doc(currentWalletUser.id).update(updateData);
+
+                    // Record adjustment in history
+                    await db.collection('walletAdjustments').add({
+                        userId: currentWalletUser.id,
+                        telegramId: currentWalletUser.telegramId,
+                        telegramUsername: currentWalletUser.telegramUsername,
+                        adminId: currentUser.uid,
+                        csChange: csChange,
+                        usdChange: usdChange,
+                        hashChange: hashChange,
+                        reason: reason,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Add transaction record for user
+                    if (csChange !== 0) {
+                        await db.collection('transactions').add({
+                            userId: currentWalletUser.id,
+                            type: csChange > 0 ? 'admin_add_cs' : 'admin_deduct_cs',
+                            amount: csChange,
+                            description: `Admin adjustment: ${reason}`,
+                            status: 'completed',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+
+                    if (usdChange !== 0) {
+                        await db.collection('transactions').add({
+                            userId: currentWalletUser.id,
+                            type: usdChange > 0 ? 'admin_add_usd' : 'admin_deduct_usd',
+                            amount: usdChange,
+                            description: `Admin adjustment: ${reason}`,
+                            status: 'completed',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+
+                    showNotification('Wallet adjustment applied successfully!', 'success');
+                    
+                    // Reset form
+                    dom.adjustCsAmount.value = '';
+                    dom.adjustUsdAmount.value = '';
+                    dom.adjustHashPower.value = '';
+                    dom.adjustReason.value = '';
+                    
+                    // Close modal and refresh data
+                    dom.walletConfirmModal.style.display = 'none';
+                    
+                    // Refresh user data
+                    const userDoc = await db.collection('users').doc(currentWalletUser.id).get();
+                    currentWalletUser = {
+                        id: currentWalletUser.id,
+                        ...userDoc.data()
+                    };
+                    
+                    // Update displayed balances
+                    dom.currentCsBalance.textContent = `${currentWalletUser.csBalance ? currentWalletUser.csBalance.toFixed(4) : '0.0000'} CS`;
+                    dom.currentUsdBalance.textContent = `$${currentWalletUser.usdBalance ? currentWalletUser.usdBalance.toFixed(2) : '0.00'}`;
+                    dom.currentHashPower.textContent = `${currentWalletUser.hashPower || 10} H/s`;
+                    
+                    // Refresh history
+                    loadWalletAdjustmentHistory();
+                    
+                } catch (error) {
+                    console.error('Error applying wallet adjustment:', error);
+                    showNotification('Error applying wallet adjustment', 'error');
+                }
+            };
+
+            // Load wallet adjustment history
+            const loadWalletAdjustmentHistory = async () => {
+                try {
+                    const historySnapshot = await db.collection('walletAdjustments')
+                        .orderBy('timestamp', 'desc')
+                        .limit(50)
+                        .get();
+                    
+                    dom.walletHistoryTableBody.innerHTML = '';
+                    
+                    if (historySnapshot.empty) {
+                        dom.walletHistoryTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align: center; opacity: 0.7;">No wallet adjustments yet</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    historySnapshot.forEach(doc => {
+                        const adjustment = doc.data();
+                        const row = document.createElement('tr');
+                        
+                        row.innerHTML = `
+                            <td>${adjustment.timestamp ? new Date(adjustment.timestamp.seconds * 1000).toLocaleString() : 'N/A'}</td>
+                            <td>${adjustment.userId}</td>
+                            <td>${adjustment.telegramUsername || 'N/A'} (${adjustment.telegramId || 'N/A'})</td>
+                            <td style="color: ${adjustment.csChange >= 0 ? 'var(--success)' : 'var(--danger)'}">
+                                ${adjustment.csChange > 0 ? '+' : ''}${adjustment.csChange.toFixed(4)} CS
+                            </td>
+                            <td style="color: ${adjustment.usdChange >= 0 ? 'var(--success)' : 'var(--danger)'}">
+                                ${adjustment.usdChange > 0 ? '+' : ''}$${adjustment.usdChange.toFixed(2)}
+                            </td>
+                            <td style="color: ${adjustment.hashChange >= 0 ? 'var(--success)' : 'var(--danger)'}">
+                                ${adjustment.hashChange > 0 ? '+' : ''}${adjustment.hashChange} H/s
+                            </td>
+                            <td>${adjustment.reason}</td>
+                            <td>${adjustment.adminId}</td>
+                        `;
+                        
+                        dom.walletHistoryTableBody.appendChild(row);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading wallet adjustment history:', error);
+                    dom.walletHistoryTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--danger);">Error loading history</td>
+                        </tr>
+                    `;
+                }
+            };
+
+
+            // Load settings
+           const loadSettings = async () => {
+            try {
+                const settingsDoc = await db.collection('settings').doc('appSettings').get();
+                
+                if (settingsDoc.exists) {
+                    settings = settingsDoc.data();
+                    dom.csTokenPrice.value = settings.csTokenPrice || 0.05;
+                    dom.tapReward.value = settings.tapReward || 0.5;
+                    dom.minWithdrawal.value = settings.minWithdrawal || 10;
+                    dom.hashToCs.value = settings.hashToCs || 0.05;
+                }
+                
+                const packagesSnapshot = await db.collection('packages').get();
+                packages = [];
+                packagesSnapshot.forEach(doc => {
+                    packages.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayPackages();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Error loading settings', 'error');
+            }
+        };
+
+            // Display packages
+            const displayPackages = () => {
+                dom.packagesList.innerHTML = '';
+                
+                packages.forEach(pkg => {
+                    const packageEl = document.createElement('div');
+                    packageEl.className = 'stat-card';
+                    packageEl.style.marginBottom = '15px';
+                    packageEl.style.textAlign = 'left';
+                    packageEl.style.padding = '15px';
+                    
+                    packageEl.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="margin-bottom: 5px;">${pkg.title}</h4>
+                                <p style="margin-bottom: 5px; font-size: 14px;">Price: $${pkg.price} | Hash Power: ${pkg.hashPower} H/s</p>
+                                <p style="margin-bottom: 5px; font-size: 14px;">Bonus CS: ${pkg.bonusCs || 0} | Daily USD: $${pkg.dailyUsd || 0}</p>
+                                <p style="font-size: 12px; opacity: 0.7;">ID: ${pkg.id}</p>
+                            </div>
+                            <div>
+                                <button class="btn btn-warning edit-package" data-package-id="${pkg.id}">Edit</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    dom.packagesList.appendChild(packageEl);
+                });
+                
+                // Add event listeners to edit buttons
+                document.querySelectorAll('.edit-package').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const packageId = btn.getAttribute('data-package-id');
+                        openPackageModal(packageId);
+                    });
+                });
+            };
+
+            // Save settings
+            const saveSettings = async () => {
+                try {
+                    const updatedSettings = {
+                        csTokenPrice: parseFloat(dom.csTokenPrice.value),
+                        tapReward: parseFloat(dom.tapReward.value),
+                        minWithdrawal: parseFloat(dom.minWithdrawal.value),
+                        hashToCs: parseFloat(dom.hashToCs.value),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    await db.collection('settings').doc('appSettings').set(updatedSettings, { merge: true });
+                    settings = updatedSettings;
+                    
+                    showNotification('Settings saved successfully!', 'success');
+                } catch (error) {
+                    console.error('Error saving settings:', error);
+                    showNotification('Error saving settings', 'error');
+                }
+            };
+
+            // Open package modal
+            const openPackageModal = (packageId = null) => {
+                if (packageId) {
+                    // Edit existing package
+                    currentPackage = packages.find(p => p.id === packageId);
+                    dom.packageModalTitle.textContent = 'Edit Package';
+                    dom.packageTitle.value = currentPackage.title;
+                    dom.packagePrice.value = currentPackage.price;
+                    dom.packageHash.value = currentPackage.hashPower;
+                    dom.packageBonus.value = currentPackage.bonusCs || 0;
+                    dom.packageDaily.value = currentPackage.dailyUsd || 0;
+                    dom.packagePremium.checked = currentPackage.isPremium || false;
+                    dom.deletePackage.style.display = 'block';
+                } else {
+                    // Add new package
+                    currentPackage = null;
+                    dom.packageModalTitle.textContent = 'Add Package';
+                    dom.packageTitle.value = '';
+                    dom.packagePrice.value = '';
+                    dom.packageHash.value = '';
+                    dom.packageBonus.value = '';
+                    dom.packageDaily.value = '';
+                    dom.packagePremium.checked = false;
+                    dom.deletePackage.style.display = 'none';
+                }
+                
+                dom.packageModal.style.display = 'flex';
+            };
+
+            // Save package
+            const savePackage = async () => {
+                try {
+                    const packageData = {
+                        title: dom.packageTitle.value,
+                        price: parseFloat(dom.packagePrice.value),
+                        hashPower: parseInt(dom.packageHash.value),
+                        bonusCs: parseInt(dom.packageBonus.value) || 0,
+                        dailyUsd: parseFloat(dom.packageDaily.value) || 0,
+                        isPremium: dom.packagePremium.checked,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    if (currentPackage) {
+                        // Update existing package
+                        await db.collection('packages').doc(currentPackage.id).set(packageData, { merge: true });
+                        showNotification('Package updated successfully!', 'success');
+                    } else {
+                        // Add new package
+                        const id = 'pkg_' + Math.random().toString(36).substr(2, 9);
+                        await db.collection('packages').doc(id).set({
+                            ...packageData,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        showNotification('Package added successfully!', 'success');
+                    }
+                    
+                    dom.packageModal.style.display = 'none';
+                    loadSettings();
+                } catch (error) {
+                    console.error('Error saving package:', error);
+                    showNotification('Error saving package', 'error');
+                }
+            };
+
+            // Delete package
+            const deletePackage = async () => {
+                if (!currentPackage) return;
+                
+                if (confirm('Are you sure you want to delete this package?')) {
+                    try {
+                        await db.collection('packages').doc(currentPackage.id).delete();
+                        showNotification('Package deleted successfully!', 'success');
+                        dom.packageModal.style.display = 'none';
+                        loadSettings();
+                    } catch (error) {
+                        console.error('Error deleting package:', error);
+                        showNotification('Error deleting package', 'error');
+                    }
+                }
+            };
+
+// Generate pagination
+// Helper function to handle page change
+const handlePageChange = (newPage, type) => {
+    if (type === 'users') {
+        currentUsersPage = newPage;
+        displayUsers(); // displayUsers ফাংশনটি নতুন ডেটা দেখানোর পর generatePagination কল করবে
+    } else if (type === 'deposits') {
+        currentDepositsPage = newPage;
+        displayDeposits(); // displayDeposits ফাংশনটি নতুন ডেটা দেখানোর পর generatePagination কল করবে
+    } else if (type === 'withdrawals') {
+        currentWithdrawalsPage = newPage;
+        displayWithdrawals(); // displayWithdrawals ফাংশনটি নতুন ডেটা দেখানোর পর generatePagination কল করবে
+    }
+};
+
+const generatePagination = (totalItems, currentPage, type) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    let paginationContainer;
+
+    if (type === 'users') {
+        paginationContainer = dom.usersPagination;
+    } else if (type === 'deposits') {
+        paginationContainer = dom.depositsPagination;
+    } else if (type === 'withdrawals') {
+        paginationContainer = dom.withdrawalsPagination;
+    } else {
+        return;
+    }
+
+    paginationContainer.innerHTML = '';
+
+    if (totalPages <= 1) return; // যদি একটির বেশি পৃষ্ঠা না থাকে তবে পেজিনেশন দেখানোর দরকার নেই
+
+    // Previous button
+    const prevButton = document.createElement('button');
+    prevButton.className = 'page-btn';
+    prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener('click', () => {
+        handlePageChange(currentPage - 1, type);
+    });
+    paginationContainer.appendChild(prevButton);
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+        pageButton.textContent = i;
+        pageButton.addEventListener('click', () => {
+            handlePageChange(i, type);
+        });
+        paginationContainer.appendChild(pageButton);
+    }
+
+    // Next button
+    const nextButton = document.createElement('button');
+    nextButton.className = 'page-btn';
+    nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.addEventListener('click', () => {
+        handlePageChange(currentPage + 1, type);
+    });
+    paginationContainer.appendChild(nextButton);
+};
+            // Show notification
+            const showNotification = (message, type = 'success') => {
+                dom.notificationText.textContent = message;
+                let iconClass = 'fas fa-check-circle', bgColor = 'var(--success)';
+                if (type === 'warning') { iconClass = 'fas fa-exclamation-triangle'; bgColor = 'var(--warning)'; }
+                else if (type === 'error') { iconClass = 'fas fa-times-circle'; bgColor = 'var(--danger)'; }
+                else if (type === 'info') { iconClass = 'fas fa-info-circle'; bgColor = 'var(--primary)'; }
+                dom.notificationIcon.className = iconClass;
+                dom.notification.style.background = bgColor;
+                dom.notification.classList.add('show');
+                setTimeout(() => dom.notification.classList.remove('show'), 3000);
+            };
+
+            // Initialize the app
+            init();
+        });
+    </script>
+</body>
+</html>
