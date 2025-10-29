@@ -283,7 +283,7 @@
             <!-- Broadcast Tab -->
 <div class="tab-content" id="broadcast-tab">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Broadcast Message to All Users</h3>
+        <h3 class="mb-0">Advanced Broadcast System</h3>
         <button class="btn btn-outline-info btn-sm" id="refresh-broadcast-stats">
             <i class="fas fa-sync-alt"></i> Refresh Stats
         </button>
@@ -340,42 +340,86 @@
     <!-- Broadcast Form -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Create Broadcast Message</h5>
+            <h5 class="mb-0">Create Advanced Broadcast</h5>
         </div>
         <div class="card-body">
-            <div class="form-group mb-3">
-                <label for="broadcast-message" class="form-label">Message Content</label>
-                <textarea id="broadcast-message" class="form-control" 
-                          placeholder="Enter your broadcast message here..." rows="6"></textarea>
-                <div class="form-text">Maximum 4000 characters allowed.</div>
-            </div>
-
-            <div class="row">
+            <!-- Message Type Selection -->
+            <div class="row mb-3">
                 <div class="col-md-6">
-                    <div class="form-group mb-3">
+                    <div class="form-group">
                         <label for="broadcast-type" class="form-label">Message Type</label>
                         <select id="broadcast-type" class="form-select">
-                            <option value="text">Plain Text</option>
-                            <option value="markdown">Markdown Format</option>
-                            <option value="html">HTML Format</option>
+                            <option value="text">📝 Plain Text</option>
+                            <option value="photo">🖼️ Photo</option>
+                            <option value="video">🎥 Video</option>
+                            <option value="animation">🎬 GIF/Animation</option>
+                            <option value="document">📄 Document/File</option>
                         </select>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group mb-3">
+                    <div class="form-group">
                         <label for="broadcast-priority" class="form-label">Priority</label>
                         <select id="broadcast-priority" class="form-select">
-                            <option value="low">Low</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
+                            <option value="low">🟢 Low</option>
+                            <option value="normal" selected>🟡 Normal</option>
+                            <option value="high">🟠 High</option>
+                            <option value="urgent">🔴 Urgent</option>
                         </select>
                     </div>
                 </div>
             </div>
 
+            <!-- Target Audience -->
             <div class="form-group mb-3">
-                <label class="form-label">Message Preview</label>
+                <label for="target-users" class="form-label">🎯 Target Audience</label>
+                <select id="target-users" class="form-select">
+                    <option value="all">👥 All Users</option>
+                    <option value="active">✅ Active Users (Last 7 days)</option>
+                    <option value="inactive">❌ Inactive Users (7+ days)</option>
+                </select>
+            </div>
+
+            <!-- Media URL Input -->
+            <div class="form-group mb-3" id="media-url-group" style="display: none;">
+                <label for="media-url" class="form-label">🔗 Media URL</label>
+                <input type="url" id="media-url" class="form-control" placeholder="https://example.com/image.jpg">
+                <div class="form-text">Enter direct URL to your image, video, or GIF file</div>
+            </div>
+
+            <!-- Caption Input -->
+            <div class="form-group mb-3" id="caption-group" style="display: none;">
+                <label for="media-caption" class="form-label">📝 Caption (Optional)</label>
+                <textarea id="media-caption" class="form-control" rows="3" placeholder="Enter caption for your media..."></textarea>
+            </div>
+
+            <!-- Message Content -->
+            <div class="form-group mb-3">
+                <label for="broadcast-message" class="form-label">💬 Message Content</label>
+                <textarea id="broadcast-message" class="form-control" 
+                          placeholder="Enter your broadcast message here..." rows="6"></textarea>
+                <div class="form-text">
+                    ✨ HTML formatting supported: &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, &lt;u&gt;underline&lt;/u&gt;, &lt;code&gt;code&lt;/code&gt;, &lt;a href=""&gt;link&lt;/a&gt;
+                </div>
+            </div>
+
+            <!-- Inline Buttons Section -->
+            <div class="form-group mb-3">
+                <label class="form-label">🔘 Inline Buttons</label>
+                <div id="inline-buttons-container">
+                    <!-- Buttons will be added here dynamically -->
+                </div>
+                <button type="button" id="add-button-row" class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="fas fa-plus"></i> Add Button Row
+                </button>
+                <div class="form-text">
+                    🔗 Add buttons with URLs, Web Apps, or callback actions
+                </div>
+            </div>
+
+            <!-- Message Preview -->
+            <div class="form-group mb-3">
+                <label class="form-label">👀 Message Preview</label>
                 <div id="broadcast-preview" class="preview-box">
                     <div class="preview-placeholder">
                         <i class="fas fa-eye"></i>
@@ -384,9 +428,10 @@
                 </div>
             </div>
 
+            <!-- Action Buttons -->
             <div class="d-flex gap-2 mt-4 flex-wrap">
                 <button id="preview-broadcast" class="btn btn-warning flex-fill">
-                    <i class="fas fa-eye me-2"></i> Preview Message
+                    <i class="fas fa-eye me-2"></i> Preview
                 </button>
                 <button id="test-broadcast" class="btn btn-info flex-fill">
                     <i class="fas fa-vial me-2"></i> Send Test
@@ -776,20 +821,25 @@
 
                 // ... আপনার আগের dom এলিমেন্টগুলো এখানে থাকবে ...
 
-// ...
-// Broadcast elements (সঠিক সংস্করণ)
+// Broadcast elements (নতুন আপডেটেড ভার্সন)
 refreshBroadcastStatsBtn: document.getElementById('refresh-broadcast-stats'),
 broadcastTotalUsers: document.getElementById('broadcast-total-users'),
 broadcastTelegramUsers: document.getElementById('broadcast-telegram-users'),
 lastBroadcast: document.getElementById('last-broadcast'),
 broadcastSuccessRate: document.getElementById('broadcast-success-rate'),
-broadcastMessageTextarea: document.getElementById('broadcast-message'), // <= এটি সঠিক নাম
-broadcastTypeSelect: document.getElementById('broadcast-type'),       // <= এটি সঠিক নাম
-broadcastPrioritySelect: document.getElementById('broadcast-priority'), // <= এটি সঠিক নাম
-broadcastPreviewBox: document.getElementById('broadcast-preview'),     // <= এটি সঠিক নাম
+broadcastMessageTextarea: document.getElementById('broadcast-message'),
+broadcastTypeSelect: document.getElementById('broadcast-type'),
+broadcastPrioritySelect: document.getElementById('broadcast-priority'),
+targetUsersSelect: document.getElementById('target-users'),
+mediaUrlInput: document.getElementById('media-url'),
+mediaCaptionInput: document.getElementById('media-caption'),
+addButtonRowBtn: document.getElementById('add-button-row'),
+inlineButtonsContainer: document.getElementById('inline-buttons-container'),
+broadcastPreviewBox: document.getElementById('broadcast-preview'),
 previewBroadcastBtn: document.getElementById('preview-broadcast'),
 testBroadcastBtn: document.getElementById('test-broadcast'),
 sendBroadcastBtn: document.getElementById('send-broadcast'),
+// ... বাকি elements একই থাকবে
 broadcastProgressSection: document.getElementById('broadcast-progress'),
 progressText: document.getElementById('progress-text'),
 progressFill: document.getElementById('progress-fill'),
@@ -958,16 +1008,18 @@ if (runMigrationBtn) {
                  // Broadcast listeners
                 dom.refreshBroadcastStatsBtn.addEventListener('click', loadBroadcastStats);
                 dom.broadcastMessageTextarea.addEventListener('input', updateBroadcastPreview);
-                dom.broadcastTypeSelect.addEventListener('change', updateBroadcastPreview);
+                dom.broadcastTypeSelect.addEventListener('change', handleBroadcastTypeChange);
+                dom.addButtonRowBtn.addEventListener('click', addButtonRow);
                 dom.previewBroadcastBtn.addEventListener('click', previewBroadcastMessage);
                 dom.sendBroadcastBtn.addEventListener('click', sendBroadcastToUsers);
                 dom.testBroadcastBtn.addEventListener('click', handleTestBroadcast);
+                dom.sendBroadcastBtn.addEventListener('click', sendAdvancedBroadcast);
                 dom.refreshHistoryBtn.addEventListener('click', loadBroadcastHistory);
                 dom.cancelBroadcastBtn.addEventListener('click', cancelBroadcast);
             };
 
-            // ===================================================================
-// Enhanced Broadcast Functions
+           // ===================================================================
+// Enhanced Broadcast Functions - Updated for Advanced Features
 // ===================================================================
 
 /**
@@ -1022,14 +1074,97 @@ const loadBroadcastStats = async () => {
 };
 
 /**
+ * Handle broadcast type change to show/hide relevant fields
+ */
+const handleBroadcastTypeChange = () => {
+    const messageType = dom.broadcastTypeSelect.value;
+    const mediaUrlGroup = document.getElementById('media-url-group');
+    const captionGroup = document.getElementById('caption-group');
+    
+    if (messageType === 'text') {
+        mediaUrlGroup.style.display = 'none';
+        captionGroup.style.display = 'none';
+    } else {
+        mediaUrlGroup.style.display = 'block';
+        captionGroup.style.display = 'block';
+    }
+    updateBroadcastPreview();
+};
+
+/**
+ * Add a new row of inline buttons
+ */
+const addButtonRow = () => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'button-row mb-2 p-2 border rounded';
+    rowDiv.innerHTML = `
+        <div class="d-flex gap-2 align-items-center">
+            <input type="text" class="form-control form-control-sm" placeholder="Button Text" oninput="updateBroadcastPreview()">
+            <select class="form-select form-select-sm" onchange="updateBroadcastPreview()">
+                <option value="url">🌐 URL</option>
+                <option value="web_app">📱 Web App</option>
+                <option value="callback">⌨️ Callback</option>
+            </select>
+            <input type="text" class="form-control form-control-sm" placeholder="URL or Callback Data" oninput="updateBroadcastPreview()">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.parentElement.remove(); updateBroadcastPreview()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    dom.inlineButtonsContainer.appendChild(rowDiv);
+};
+
+/**
+ * Get broadcast data from form
+ */
+const getBroadcastData = () => {
+    const messageType = dom.broadcastTypeSelect.value;
+    
+    // Collect inline buttons data
+    const buttons = [];
+    const buttonRows = dom.inlineButtonsContainer.querySelectorAll('.button-row');
+    
+    buttonRows.forEach(row => {
+        const inputs = row.querySelectorAll('input, select');
+        const text = inputs[0].value.trim();
+        const action = inputs[1].value;
+        const value = inputs[2].value.trim();
+        
+        if (text && value) {
+            const button = { text };
+            if (action === 'url') button.url = value;
+            else if (action === 'web_app') button.web_app = value;
+            else if (action === 'callback') button.callback_data = value;
+            
+            if (buttons.length === 0) buttons.push([]);
+            buttons[0].push(button);
+        }
+    });
+    
+    return {
+        message: dom.broadcastMessageTextarea.value.trim(),
+        messageType: messageType,
+        mediaUrl: messageType !== 'text' ? dom.mediaUrlInput.value.trim() : null,
+        caption: messageType !== 'text' ? dom.mediaCaptionInput.value.trim() : null,
+        inlineButtons: buttons,
+        priority: dom.broadcastPrioritySelect.value,
+        targetUsers: dom.targetUsersSelect.value
+    };
+};
+
+/**
  * Update the broadcast message preview based on message type
  */
 const updateBroadcastPreview = () => {
-    const message = dom.broadcastMessageTextarea.value;
-    const messageType = dom.broadcastTypeSelect.value;
+    const broadcastData = getBroadcastData();
+    const messageType = broadcastData.messageType;
+    const message = broadcastData.message;
+    const mediaUrl = broadcastData.mediaUrl;
+    const caption = broadcastData.caption;
+    const buttons = broadcastData.inlineButtons;
     const previewBox = dom.broadcastPreviewBox;
 
-    if (!message.trim()) {
+    if (!message.trim() && !mediaUrl) {
         previewBox.innerHTML = `
             <div class="preview-placeholder">
                 <i class="fas fa-eye"></i>
@@ -1042,21 +1177,66 @@ const updateBroadcastPreview = () => {
     try {
         let previewContent = '';
         
-        switch (messageType) {
-            case 'html':
-                previewContent = message;
-                break;
-                
-            case 'markdown':
-                // Convert markdown to HTML for preview
-                previewContent = convertMarkdownToHTML(message);
-                break;
-                
-            case 'text':
-            default:
-                // For plain text, just display as is with line breaks
-                previewContent = message.replace(/\n/g, '<br>');
-                break;
+        // Handle media preview
+        if (mediaUrl && messageType !== 'text') {
+            switch (messageType) {
+                case 'photo':
+                    previewContent += `<img src="${mediaUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px;" alt="Preview Image"><br>`;
+                    break;
+                case 'video':
+                    previewContent += `<video controls style="max-width: 100%; border-radius: 8px; margin-bottom: 10px;">
+                        <source src="${mediaUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video><br>`;
+                    break;
+                case 'animation':
+                    previewContent += `<img src="${mediaUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px;" alt="GIF Preview"><br>`;
+                    break;
+                case 'document':
+                    previewContent += `<div style="padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                        <i class="fas fa-file"></i> Document: ${mediaUrl.split('/').pop()}
+                    </div><br>`;
+                    break;
+            }
+        }
+        
+        // Handle text/caption preview
+        let textContent = caption || message;
+        if (textContent) {
+            // Convert HTML tags for preview
+            let formattedText = textContent;
+            if (formattedText.includes('<br>')) {
+                formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n');
+            }
+            if (formattedText.includes('<b>') || formattedText.includes('<strong>')) {
+                formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, '<b>$1</b>')
+                                          .replace(/<strong>(.*?)<\/strong>/gi, '<b>$1</b>');
+            }
+            if (formattedText.includes('<i>') || formattedText.includes('<em>')) {
+                formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, '<i>$1</i>')
+                                          .replace(/<em>(.*?)<\/em>/gi, '<i>$1</i>');
+            }
+            if (formattedText.includes('<u>')) {
+                formattedText = formattedText.replace(/<u>(.*?)<\/u>/gi, '<u>$1</u>');
+            }
+            if (formattedText.includes('<code>')) {
+                formattedText = formattedText.replace(/<code>(.*?)<\/code>/gi, '<code>$1</code>');
+            }
+            if (formattedText.includes('<a ')) {
+                formattedText = formattedText.replace(/<a href="(.*?)">(.*?)<\/a>/gi, '<a href="$1">$2</a>');
+            }
+            
+            previewContent += `<div style="white-space: pre-wrap; margin-bottom: 10px;">${formattedText}</div>`;
+        }
+        
+        // Handle buttons preview
+        if (buttons.length > 0 && buttons[0].length > 0) {
+            previewContent += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                <strong>Buttons:</strong><br>`;
+            buttons[0].forEach(button => {
+                previewContent += `<span style="display: inline-block; background: #007bff; color: white; padding: 4px 8px; margin: 2px; border-radius: 4px; font-size: 12px;">${button.text}</span> `;
+            });
+            previewContent += `</div>`;
         }
         
         previewBox.innerHTML = previewContent;
@@ -1072,30 +1252,13 @@ const updateBroadcastPreview = () => {
 };
 
 /**
- * Convert markdown to HTML for preview
- */
-const convertMarkdownToHTML = (markdown) => {
-    return markdown
-        // Bold text
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        // Italic text
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        // Inline code
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        // Line breaks
-        .replace(/\n/g, '<br>')
-        // Basic headers (limited support)
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>');
-};
-
-/**
  * Preview the broadcast message
  */
 const previewBroadcastMessage = () => {
-    if (!dom.broadcastMessageTextarea.value.trim()) {
-        showNotification('Please enter a message to preview', 'warning');
+    const broadcastData = getBroadcastData();
+    
+    if (!broadcastData.message && !broadcastData.mediaUrl) {
+        showNotification('Please enter a message or provide media URL to preview', 'warning');
         return;
     }
     
@@ -1104,37 +1267,28 @@ const previewBroadcastMessage = () => {
 };
 
 /**
- * Send a test broadcast to a limited set of users or admin accounts
+ * Send a test broadcast to admin's own Telegram account
  */
 const handleTestBroadcast = async () => {
-    const message = dom.broadcastMessageTextarea.value.trim();
-    const messageType = dom.broadcastTypeSelect.value;
-    const priority = dom.broadcastPrioritySelect.value;
-
-    if (!message) {
-        showNotification('Please enter a message to test', 'error');
+    const broadcastData = getBroadcastData();
+    
+    if (!broadcastData.message && !broadcastData.mediaUrl) {
+        showNotification('Please enter a message or provide media URL to test', 'error');
+        return;
+    }
+    
+    if (broadcastData.messageType !== 'text' && !broadcastData.mediaUrl) {
+        showNotification('Please provide a media URL for non-text messages', 'error');
         return;
     }
 
     try {
         showNotification('Sending test broadcast...', 'info');
         
-        // Get test users (could be admin accounts or a small subset)
-        const testUsersSnapshot = await db.collection('users')
-            .where('isTestUser', '==', true)
-            .limit(5)
-            .get();
-
-        if (testUsersSnapshot.empty) {
-            showNotification('No test users found. Using first 5 users instead.', 'warning');
-            // Fallback to first 5 users
-            const allUsersSnapshot = await db.collection('users').limit(5).get();
-            await sendBroadcastToUserList(allUsersSnapshot.docs, message, messageType, priority, true);
-        } else {
-            await sendBroadcastToUserList(testUsersSnapshot.docs, message, messageType, priority, true);
-        }
+        const testBroadcast = firebase.functions().httpsCallable('testAdvancedBroadcast');
+        const result = await testBroadcast(broadcastData);
         
-        showNotification('Test broadcast sent successfully', 'success');
+        showNotification(result.data.message || 'Test message sent successfully!', 'success');
     } catch (error) {
         console.error('Error sending test broadcast:', error);
         showNotification(`Test broadcast failed: ${error.message}`, 'error');
@@ -1142,24 +1296,25 @@ const handleTestBroadcast = async () => {
 };
 
 /**
- * Send broadcast to all users with progress tracking
+ * Send advanced broadcast to all users with progress tracking
  */
-const sendBroadcastToUsers = async () => {
-    const message = dom.broadcastMessageTextarea.value.trim();
-    const messageType = dom.broadcastTypeSelect.value;
-    const priority = dom.broadcastPrioritySelect.value;
-
-    if (!message) {
-        showNotification('Please enter a message to broadcast', 'error');
+const sendAdvancedBroadcast = async () => {
+    const broadcastData = getBroadcastData();
+    
+    // Validation
+    if (!broadcastData.message && !broadcastData.mediaUrl) {
+        showNotification('Please enter a message or provide media URL', 'error');
         return;
     }
-
-    if (message.length > 4000) {
-        showNotification('Message exceeds 4000 character limit', 'error');
+    
+    if (broadcastData.messageType !== 'text' && !broadcastData.mediaUrl) {
+        showNotification('Please provide a media URL for non-text messages', 'error');
         return;
     }
-
-    if (!confirm(`Are you sure you want to send this message to ALL ${dom.broadcastTotalUsers.textContent} users? This action cannot be undone.`)) {
+    
+    const totalUsers = parseInt(dom.broadcastTotalUsers.textContent) || 0;
+    
+    if (!confirm(`Are you sure you want to send this ${broadcastData.messageType} broadcast to ${totalUsers} users? This action cannot be undone.`)) {
         return;
     }
 
@@ -1167,44 +1322,67 @@ const sendBroadcastToUsers = async () => {
         // Initialize broadcast progress
         initializeBroadcastProgress();
         
-        // Get all users with Telegram IDs
-        const usersSnapshot = await db.collection('users')
-            .where('telegramId', '!=', null)
-            .get();
-
-        if (usersSnapshot.empty) {
-            showNotification('No users with Telegram IDs found', 'warning');
-            resetBroadcastUI();
-            return;
-        }
-
-        const totalUsers = usersSnapshot.size;
-        dom.totalCount.textContent = totalUsers;
-        dom.pendingCount.textContent = totalUsers;
+        const advancedBroadcast = firebase.functions().httpsCallable('advancedBroadcast');
+        const result = await advancedBroadcast(broadcastData);
         
-        // Create broadcast record
-        const broadcastId = await createBroadcastRecord(message, messageType, priority, totalUsers);
+        showNotification('Broadcast started successfully!', 'success');
         
-        // Send messages with progress tracking
-        await sendBroadcastToUserList(usersSnapshot.docs, message, messageType, priority, false, broadcastId);
-        
-        // Finalize broadcast
-        await finalizeBroadcast(broadcastId);
-        
-        showNotification(`Broadcast completed! Success: ${dom.successCount.textContent}, Failed: ${dom.failedCount.textContent}`, 'success');
-        
-        // Refresh stats and history
-        setTimeout(() => {
-            loadBroadcastStats();
-            loadBroadcastHistory();
-            resetBroadcastUI();
-        }, 2000);
+        // Monitor progress
+        monitorBroadcastProgress(result.data.broadcastId);
         
     } catch (error) {
-        console.error('Error in broadcast process:', error);
+        console.error('Error in advanced broadcast:', error);
         showNotification(`Broadcast failed: ${error.message}`, 'error');
         resetBroadcastUI();
     }
+};
+
+/**
+ * Monitor broadcast progress
+ */
+const monitorBroadcastProgress = async (broadcastId) => {
+    const checkProgress = async () => {
+        try {
+            const getBroadcastStatus = firebase.functions().httpsCallable('getBroadcastStatus');
+            const result = await getBroadcastStatus({ broadcastId });
+            const broadcast = result.data;
+            
+            // Update progress UI
+            const total = broadcast.total || 0;
+            const success = broadcast.success || 0;
+            const failed = broadcast.failed || 0;
+            const processed = success + failed;
+            
+            if (total > 0) {
+                const progress = Math.round((processed / total) * 100);
+                dom.progressFill.style.width = `${progress}%`;
+                dom.progressText.textContent = `${progress}% (${processed}/${total})`;
+                dom.successCount.textContent = success;
+                dom.failedCount.textContent = failed;
+                dom.pendingCount.textContent = total - processed;
+                dom.totalCount.textContent = total;
+            }
+            
+            // Check if broadcast is completed
+            if (broadcast.status === 'completed') {
+                showNotification(`Broadcast completed! Success: ${success}, Failed: ${failed}`, 'success');
+                setTimeout(() => {
+                    loadBroadcastStats();
+                    loadBroadcastHistory();
+                    resetBroadcastUI();
+                }, 2000);
+            } else if (broadcast.status === 'in_progress') {
+                // Continue monitoring
+                setTimeout(checkProgress, 2000);
+            }
+        } catch (error) {
+            console.error('Error monitoring broadcast progress:', error);
+            setTimeout(checkProgress, 5000);
+        }
+    };
+    
+    // Start monitoring
+    checkProgress();
 };
 
 /**
@@ -1232,167 +1410,12 @@ const initializeBroadcastProgress = () => {
 const resetBroadcastUI = () => {
     dom.broadcastProgressSection.style.display = 'none';
     dom.sendBroadcastBtn.disabled = false;
-    dom.sendBroadcastBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Broadcast';
+    dom.sendBroadcastBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Send Broadcast';
     dom.broadcastMessageTextarea.value = '';
+    dom.mediaUrlInput.value = '';
+    dom.mediaCaptionInput.value = '';
+    dom.inlineButtonsContainer.innerHTML = '';
     updateBroadcastPreview();
-};
-
-/**
- * Create a broadcast record in Firestore
- */
-const createBroadcastRecord = async (message, messageType, priority, totalUsers) => {
-    const broadcastData = {
-        message: message,
-        messageType: messageType,
-        priority: priority,
-        total: totalUsers,
-        success: 0,
-        failed: 0,
-        pending: totalUsers,
-        status: 'in_progress',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        adminId: currentUser.uid,
-        adminEmail: currentUser.email
-    };
-    
-    const docRef = await db.collection('broadcastHistory').add(broadcastData);
-    return docRef.id;
-};
-
-/**
- * Send broadcast to a list of users with progress tracking
- */
-const sendBroadcastToUserList = async (userDocs, message, messageType, priority, isTest = false, broadcastId = null) => {
-    let successCount = 0;
-    let failedCount = 0;
-    const totalUsers = userDocs.length;
-    
-    // Update progress more frequently for better UX
-    const progressUpdateInterval = Math.max(1, Math.floor(totalUsers / 20));
-    
-    for (let i = 0; i < userDocs.length; i++) {
-        // Check if broadcast was cancelled
-        if (dom.cancelBroadcastBtn.disabled) {
-            break;
-        }
-        
-        const userDoc = userDocs[i];
-        const userData = userDoc.data();
-        
-        try {
-            // Send message to user via Telegram
-            await sendTelegramMessage(userData.telegramId, message, messageType);
-            
-            successCount++;
-            
-            // Log successful delivery if not a test
-            if (!isTest && broadcastId) {
-                await logMessageDelivery(broadcastId, userDoc.id, 'success');
-            }
-        } catch (error) {
-            console.error(`Failed to send to user ${userDoc.id}:`, error);
-            failedCount++;
-            
-            // Log failed delivery if not a test
-            if (!isTest && broadcastId) {
-                await logMessageDelivery(broadcastId, userDoc.id, 'failed', error.message);
-            }
-        }
-        
-        // Update progress UI periodically
-        if (i % progressUpdateInterval === 0 || i === totalUsers - 1) {
-            const progress = Math.round(((i + 1) / totalUsers) * 100);
-            
-            dom.progressFill.style.width = `${progress}%`;
-            dom.progressText.textContent = `${progress}% (${i + 1}/${totalUsers})`;
-            dom.successCount.textContent = successCount;
-            dom.failedCount.textContent = failedCount;
-            dom.pendingCount.textContent = totalUsers - (i + 1);
-            
-            // Add status message for larger broadcasts
-            if (totalUsers > 50 && i % (progressUpdateInterval * 5) === 0) {
-                const statusMessage = document.createElement('div');
-                statusMessage.textContent = `Processed ${i + 1} of ${totalUsers} users...`;
-                statusMessage.style.fontSize = '0.9em';
-                statusMessage.style.marginTop = '5px';
-                statusMessage.style.color = 'var(--text-secondary)';
-                dom.broadcastStatus.appendChild(statusMessage);
-                
-                // Limit status messages to last 5
-                if (dom.broadcastStatus.children.length > 5) {
-                    dom.broadcastStatus.removeChild(dom.broadcastStatus.firstChild);
-                }
-            }
-        }
-        
-        // Small delay to avoid hitting rate limits
-        if (!isTest) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-    }
-    
-    // Update final counts
-    dom.successCount.textContent = successCount;
-    dom.failedCount.textContent = failedCount;
-    dom.pendingCount.textContent = 0;
-    dom.progressFill.style.width = '100%';
-    dom.progressText.textContent = `100% (${totalUsers}/${totalUsers})`;
-    
-    return { success: successCount, failed: failedCount };
-};
-
-/**
- * Send message to a user via Telegram
- */
-const sendTelegramMessage = async (telegramId, message, messageType) => {
-    // This would integrate with your Telegram bot API
-    // Implementation depends on your Telegram bot setup
-    
-    // Example implementation using a Cloud Function
-    const sendMessageFunction = firebase.functions().httpsCallable('sendTelegramMessage');
-    const result = await sendMessageFunction({
-        telegramId: telegramId,
-        message: message,
-        messageType: messageType
-    });
-    
-    if (!result.data.success) {
-        throw new Error(result.data.error || 'Failed to send Telegram message');
-    }
-    
-    return result.data;
-};
-
-/**
- * Log message delivery status
- */
-const logMessageDelivery = async (broadcastId, userId, status, error = null) => {
-    const deliveryLog = {
-        broadcastId: broadcastId,
-        userId: userId,
-        status: status,
-        error: error,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    
-    await db.collection('broadcastDeliveryLogs').add(deliveryLog);
-};
-
-/**
- * Finalize broadcast by updating the record
- */
-const finalizeBroadcast = async (broadcastId) => {
-    const successCount = parseInt(dom.successCount.textContent);
-    const failedCount = parseInt(dom.failedCount.textContent);
-    const totalCount = parseInt(dom.totalCount.textContent);
-    
-    await db.collection('broadcastHistory').doc(broadcastId).update({
-        success: successCount,
-        failed: failedCount,
-        pending: 0,
-        status: 'completed',
-        completedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
 };
 
 /**
@@ -1403,9 +1426,7 @@ const cancelBroadcast = async () => {
         dom.cancelBroadcastBtn.disabled = true;
         dom.broadcastStatus.innerHTML += '<div style="color: var(--warning)">Broadcast cancellation requested...</div>';
         
-        // In a real implementation, you would need to track the ongoing broadcast
-        // and have a way to stop it. This is a simplified version.
-        
+        // Note: Actual cancellation would require additional backend implementation
         setTimeout(() => {
             resetBroadcastUI();
             showNotification('Broadcast cancelled', 'warning');
@@ -1444,9 +1465,15 @@ const loadBroadcastHistory = async () => {
                 'N/A';
                 
             // Shorten message for preview
-            const messagePreview = broadcast.message.length > 50 ? 
-                broadcast.message.substring(0, 50) + '...' : 
-                broadcast.message;
+            const messagePreview = broadcast.message ? 
+                (broadcast.message.length > 50 ? 
+                    broadcast.message.substring(0, 50) + '...' : 
+                    broadcast.message) : 
+                (broadcast.caption ? 
+                    (broadcast.caption.length > 50 ? 
+                        broadcast.caption.substring(0, 50) + '...' : 
+                        broadcast.caption) : 
+                    `[${broadcast.messageType}]`);
 
             // Determine status badge
             let statusBadge = '';
@@ -1463,7 +1490,7 @@ const loadBroadcastHistory = async () => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${date}</td>
-                <td title="${broadcast.message.replace(/"/g, '&quot;')}">${messagePreview}</td>
+                <td title="${broadcast.message || broadcast.caption || ''}">${messagePreview}</td>
                 <td>${broadcast.messageType || 'text'}</td>
                 <td>${broadcast.total || 0}</td>
                 <td style="color: var(--success)">${broadcast.success || 0}</td>
@@ -1539,6 +1566,9 @@ const viewBroadcastDetails = async (broadcastId) => {
                         <strong>Priority:</strong> ${broadcast.priority || 'normal'}
                     </div>
                     <div class="detail-item">
+                        <strong>Target Users:</strong> ${broadcast.targetUsers || 'all'}
+                    </div>
+                    <div class="detail-item">
                         <strong>Total Users:</strong> ${broadcast.total || 0}
                     </div>
                     <div class="detail-item">
@@ -1550,9 +1580,23 @@ const viewBroadcastDetails = async (broadcastId) => {
                 </div>
                 
                 <div class="message-preview">
-                    <strong>Message:</strong>
-                    <div class="message-content">${broadcast.message}</div>
+                    <strong>Content:</strong>
+                    <div class="message-content">${broadcast.message || broadcast.caption || 'No content'}</div>
                 </div>
+                
+                ${broadcast.mediaUrl ? `
+                    <div class="media-preview">
+                        <strong>Media URL:</strong>
+                        <div><a href="${broadcast.mediaUrl}" target="_blank">${broadcast.mediaUrl}</a></div>
+                    </div>
+                ` : ''}
+                
+                ${broadcast.inlineButtons && broadcast.inlineButtons.length > 0 ? `
+                    <div class="buttons-preview">
+                        <strong>Inline Buttons:</strong>
+                        <div>${JSON.stringify(broadcast.inlineButtons)}</div>
+                    </div>
+                ` : ''}
                 
                 ${deliveryLogsSnapshot.empty ? '' : `
                     <div class="delivery-logs">
@@ -1562,7 +1606,7 @@ const viewBroadcastDetails = async (broadcastId) => {
                                 const log = doc.data();
                                 return `
                                     <div class="log-entry ${log.status}">
-                                        <span class="log-user">User: ${log.userId}</span>
+                                        <span class="log-user">User: ${log.userId || log.telegramId}</span>
                                         <span class="log-status">${log.status}</span>
                                         <span class="log-time">${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString() : 'N/A'}</span>
                                         ${log.error ? `<span class="log-error">Error: ${log.error}</span>` : ''}
@@ -1575,13 +1619,57 @@ const viewBroadcastDetails = async (broadcastId) => {
             </div>
         `;
         
-        // Show in a modal (you would need to implement this)
+        // Show in a modal
         showCustomModal('Broadcast Details', modalContent);
         
     } catch (error) {
         console.error('Error loading broadcast details:', error);
         showNotification('Failed to load broadcast details', 'error');
     }
+};
+
+// Helper function to show custom modal
+const showCustomModal = (title, content) => {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('custom-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'custom-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <div class="modal-title">${title}</div>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    ${content}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary close-modal">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Add close event listeners
+        modal.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    } else {
+        modal.querySelector('.modal-title').textContent = title;
+        modal.querySelector('.modal-body').innerHTML = content;
+    }
+    
+    modal.style.display = 'flex';
 };
 
 // Initialize broadcast functionality when the tab is loaded
@@ -1592,7 +1680,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (dom.broadcastTypeSelect) {
-        dom.broadcastTypeSelect.addEventListener('change', updateBroadcastPreview);
+        dom.broadcastTypeSelect.addEventListener('change', handleBroadcastTypeChange);
+    }
+    
+    if (dom.mediaUrlInput) {
+        dom.mediaUrlInput.addEventListener('input', updateBroadcastPreview);
+    }
+    
+    if (dom.mediaCaptionInput) {
+        dom.mediaCaptionInput.addEventListener('input', updateBroadcastPreview);
     }
     
     // Load initial data if on broadcast tab

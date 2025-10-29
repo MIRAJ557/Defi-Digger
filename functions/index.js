@@ -293,9 +293,13 @@ exports.detectAndProcessReferral = functions.firestore
     });
 
 // ===================================================================
-// উন্নত ব্রডকাস্ট সিস্টেম
+// ★★★ উন্নত এবং প্রফেশনাল ব্রডকাস্ট সিস্টেম ★★★
 // ===================================================================
-exports.broadcastMessage = functions.runWith({ 
+
+/**
+ * উন্নত ব্রডকাস্ট ফাংশন - টেক্সট, ইমেজ, ভিডিও, জিফ এবং ইনলাইন বাটন সাপোর্ট করে
+ */
+exports.advancedBroadcast = functions.runWith({ 
     timeoutSeconds: 540, 
     memory: '1GB' 
 }).https.onCall(async (data, context) => {
@@ -310,51 +314,87 @@ exports.broadcastMessage = functions.runWith({
         throw new functions.https.HttpsError('permission-denied', 'Admin access required.');
     }
 
-    const { message, messageType = 'text' } = data;
+    const { 
+        message, 
+        messageType = 'text', 
+        mediaUrl = null,
+        caption = '',
+        inlineButtons = [],
+        priority = 'normal',
+        targetUsers = 'all' // 'all', 'active', 'inactive'
+    } = data;
     
-    if (!message) {
-        throw new functions.https.HttpsError('invalid-argument', 'Message text is required.');
+    if (!message && !mediaUrl) {
+        throw new functions.https.HttpsError('invalid-argument', 'Message text or media URL is required.');
     }
 
     try {
-        const usersSnapshot = await db.collection('users')
-            .where('telegramId', '!=', null)
-            .get();
+        // ব্রডকাস্ট রেকর্ড তৈরি করা
+        const broadcastId = await createBroadcastRecord({
+            adminId: context.auth.uid,
+            message,
+            messageType,
+            mediaUrl,
+            caption,
+            inlineButtons,
+            priority,
+            targetUsers
+        });
 
+        // টার্গেট ইউজার সিলেক্ট করা
+        let usersQuery = db.collection('users').where('telegramId', '!=', null);
+        
+        if (targetUsers === 'active') {
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            usersQuery = usersQuery.where('lastLogin', '>=', sevenDaysAgo);
+        } else if (targetUsers === 'inactive') {
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            usersQuery = usersQuery.where('lastLogin', '<', sevenDaysAgo);
+        }
+
+        const usersSnapshot = await usersQuery.get();
         const totalUsers = usersSnapshot.size;
+
+        console.log(`Starting advanced broadcast to ${totalUsers} users`);
+
+        // প্রোগ্রেস আপডেট
+        await updateBroadcastProgress(broadcastId, {
+            total: totalUsers,
+            success: 0,
+            failed: 0,
+            status: 'in_progress'
+        });
+
         let successCount = 0;
         let failCount = 0;
         const failedUsers = [];
 
-        console.log(`Starting broadcast to ${totalUsers} users`);
-
         // ব্যাচ প্রসেসিং for better performance
-        const batchSize = 30;
+        const batchSize = 25;
         const batches = [];
         
         for (let i = 0; i < usersSnapshot.docs.length; i += batchSize) {
             batches.push(usersSnapshot.docs.slice(i, i + batchSize));
         }
 
-        for (const batch of batches) {
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+            const batch = batches[batchIndex];
             const batchPromises = batch.map(async (doc) => {
                 const userData = doc.data();
                 try {
-                    let sentMessage;
-                    
-                    if (messageType === 'html') {
-                        sentMessage = await bot.sendMessage(userData.telegramId, message, { 
-                            parse_mode: 'HTML' 
-                        });
-                    } else if (messageType === 'markdown') {
-                        sentMessage = await bot.sendMessage(userData.telegramId, message, { 
-                            parse_mode: 'Markdown' 
-                        });
-                    } else {
-                        sentMessage = await bot.sendMessage(userData.telegramId, message);
-                    }
+                    await sendAdvancedMessage(userData.telegramId, {
+                        message,
+                        messageType,
+                        mediaUrl,
+                        caption,
+                        inlineButtons
+                    });
                     
                     successCount++;
+                    
+                    // ডেলিভারি লগ সংরক্ষণ
+                    await logMessageDelivery(broadcastId, userData.telegramId, 'success');
+                    
                     console.log(`Sent to ${userData.telegramId}: success`);
                     return { success: true, userId: userData.telegramId };
                     
@@ -364,39 +404,349 @@ exports.broadcastMessage = functions.runWith({
                         userId: userData.telegramId,
                         error: error.message
                     });
+                    
+                    // ডেলিভারি লগ সংরক্ষণ
+                    await logMessageDelivery(broadcastId, userData.telegramId, 'failed', error.message);
+                    
                     console.log(`Failed to send to ${userData.telegramId}: ${error.message}`);
                     return { success: false, userId: userData.telegramId, error: error.message };
                 }
             });
 
             await Promise.all(batchPromises);
+            
+            // প্রোগ্রেস আপডেট
+            await updateBroadcastProgress(broadcastId, {
+                success: successCount,
+                failed: failCount,
+                status: 'in_progress'
+            });
+
             // Rate limiting - avoid hitting Telegram limits
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
+        // ফাইনাল স্ট্যাটাস আপডেট
+        await updateBroadcastProgress(broadcastId, {
+            success: successCount,
+            failed: failCount,
+            status: 'completed',
+            completedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
         const result = {
             success: true,
-            message: `Broadcast completed! Success: ${successCount}, Failed: ${failCount}, Total: ${totalUsers}`,
+            message: `✅ Broadcast completed!\n\n📊 Statistics:\n✅ Successful: ${successCount}\n❌ Failed: ${failCount}\n👥 Total: ${totalUsers}\n📈 Success Rate: ${((successCount / totalUsers) * 100).toFixed(1)}%`,
             stats: {
                 total: totalUsers,
                 success: successCount,
-                failed: failCount
+                failed: failCount,
+                successRate: ((successCount / totalUsers) * 100).toFixed(1)
             },
+            broadcastId: broadcastId,
             failedUsers: failedUsers.slice(0, 10) // প্রথম 10টি failed user
         };
 
-        // Admin কে রিপোর্ট পাঠানো
-        await bot.sendMessage(
-            context.auth.uid, // Admin এর Telegram ID
-            `📢 Broadcast Report:\n\n✅ Success: ${successCount}\n❌ Failed: ${failCount}\n📊 Total: ${totalUsers}`,
-            { parse_mode: 'Markdown' }
-        );
+        // Admin কে ডিটেইলড রিপোর্ট পাঠানো
+        await sendBroadcastReportToAdmin(context.auth.uid, result);
 
         return result;
 
     } catch (error) {
-        console.error('Broadcast failed:', error);
+        console.error('Advanced broadcast failed:', error);
         throw new functions.https.HttpsError('internal', 'Broadcast operation failed: ' + error.message);
+    }
+});
+
+/**
+ * উন্নত মেসেজ সেন্ডিং ফাংশন - সব ধরনের মিডিয়া সাপোর্ট করে
+ */
+async function sendAdvancedMessage(telegramId, messageData) {
+    const { message, messageType, mediaUrl, caption, inlineButtons } = messageData;
+    
+    const finalTelegramId = String(telegramId).replace('tg_', '');
+    
+    // ইনলাইন বাটন প্রস্তুত করা
+    let replyMarkup = null;
+    if (inlineButtons && inlineButtons.length > 0) {
+        const keyboard = [];
+        for (const row of inlineButtons) {
+            const buttonRow = [];
+            for (const button of row) {
+                if (button.url) {
+                    buttonRow.push({
+                        text: button.text,
+                        url: button.url
+                    });
+                } else if (button.web_app) {
+                    buttonRow.push({
+                        text: button.text,
+                        web_app: { url: button.web_app }
+                    });
+                } else if (button.callback_data) {
+                    buttonRow.push({
+                        text: button.text,
+                        callback_data: button.callback_data
+                    });
+                }
+            }
+            if (buttonRow.length > 0) {
+                keyboard.push(buttonRow);
+            }
+        }
+        
+        if (keyboard.length > 0) {
+            replyMarkup = {
+                inline_keyboard: keyboard
+            };
+        }
+    }
+
+    const options = {
+        parse_mode: 'HTML',
+        disable_web_page_preview: false
+    };
+
+    if (replyMarkup) {
+        options.reply_markup = replyMarkup;
+    }
+
+    try {
+        // মেসেজ টাইপ অনুযায়ী কন্টেন্ট সেন্ড করা
+        switch (messageType) {
+            case 'text':
+                let finalMessage = message;
+                // HTML ট্যাগগুলিকে টেলিগ্রাম-সাপোর্টেড ফরম্যাটে কনভার্ট করা
+                if (finalMessage.includes('<br>')) {
+                    finalMessage = finalMessage.replace(/<br\s*\/?>/gi, '\n');
+                }
+                if (finalMessage.includes('<b>') || finalMessage.includes('<strong>')) {
+                    finalMessage = finalMessage.replace(/<b>(.*?)<\/b>/gi, '<b>$1</b>')
+                                              .replace(/<strong>(.*?)<\/strong>/gi, '<b>$1</b>');
+                }
+                if (finalMessage.includes('<i>') || finalMessage.includes('<em>')) {
+                    finalMessage = finalMessage.replace(/<i>(.*?)<\/i>/gi, '<i>$1</i>')
+                                              .replace(/<em>(.*?)<\/em>/gi, '<i>$1</i>');
+                }
+                if (finalMessage.includes('<u>')) {
+                    finalMessage = finalMessage.replace(/<u>(.*?)<\/u>/gi, '<u>$1</u>');
+                }
+                if (finalMessage.includes('<code>')) {
+                    finalMessage = finalMessage.replace(/<code>(.*?)<\/code>/gi, '<code>$1</code>');
+                }
+                if (finalMessage.includes('<a ')) {
+                    finalMessage = finalMessage.replace(/<a href="(.*?)">(.*?)<\/a>/gi, '<a href="$1">$2</a>');
+                }
+                
+                await bot.sendMessage(finalTelegramId, finalMessage, options);
+                break;
+
+            case 'photo':
+                if (!mediaUrl) throw new Error('Media URL is required for photo message');
+                await bot.sendPhoto(finalTelegramId, mediaUrl, {
+                    caption: caption || message,
+                    parse_mode: 'HTML',
+                    reply_markup: replyMarkup
+                });
+                break;
+
+            case 'video':
+                if (!mediaUrl) throw new Error('Media URL is required for video message');
+                await bot.sendVideo(finalTelegramId, mediaUrl, {
+                    caption: caption || message,
+                    parse_mode: 'HTML',
+                    reply_markup: replyMarkup
+                });
+                break;
+
+            case 'animation': // GIF
+                if (!mediaUrl) throw new Error('Media URL is required for animation message');
+                await bot.sendAnimation(finalTelegramId, mediaUrl, {
+                    caption: caption || message,
+                    parse_mode: 'HTML',
+                    reply_markup: replyMarkup
+                });
+                break;
+
+            case 'document':
+                if (!mediaUrl) throw new Error('Media URL is required for document message');
+                await bot.sendDocument(finalTelegramId, mediaUrl, {
+                    caption: caption || message,
+                    parse_mode: 'HTML',
+                    reply_markup: replyMarkup
+                });
+                break;
+
+            default:
+                throw new Error(`Unsupported message type: ${messageType}`);
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error(`Error sending ${messageType} to ${finalTelegramId}:`, error.message);
+        throw error;
+    }
+}
+
+/**
+ * ব্রডকাস্ট রেকর্ড তৈরি করা
+ */
+async function createBroadcastRecord(broadcastData) {
+    const broadcastRef = await db.collection('broadcastHistory').add({
+        ...broadcastData,
+        total: 0,
+        success: 0,
+        failed: 0,
+        status: 'initializing',
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        completedAt: null
+    });
+    
+    return broadcastRef.id;
+}
+
+/**
+ * ব্রডকাস্ট প্রোগ্রেস আপডেট করা
+ */
+async function updateBroadcastProgress(broadcastId, updates) {
+    await db.collection('broadcastHistory').doc(broadcastId).update({
+        ...updates,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    });
+}
+
+/**
+ * মেসেজ ডেলিভারি লগ সংরক্ষণ
+ */
+async function logMessageDelivery(broadcastId, telegramId, status, error = null) {
+    const deliveryLog = {
+        broadcastId: broadcastId,
+        telegramId: telegramId,
+        status: status,
+        error: error,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    await db.collection('broadcastDeliveryLogs').add(deliveryLog);
+}
+
+/**
+ * অ্যাডমিনকে ব্রডকাস্ট রিপোর্ট পাঠানো
+ */
+async function sendBroadcastReportToAdmin(adminUid, result) {
+    try {
+        const adminDoc = await db.collection('admins').doc(adminUid).get();
+        if (adminDoc.exists) {
+            const adminData = adminDoc.data();
+            if (adminData.telegramId) {
+                const reportMessage = `
+📢 *Broadcast Completion Report*
+
+✅ *Successful:* ${result.stats.success}
+❌ *Failed:* ${result.stats.failed}
+👥 *Total Users:* ${result.stats.total}
+📈 *Success Rate:* ${result.stats.successRate}%
+
+🆔 *Broadcast ID:* ${result.broadcastId}
+
+${result.stats.failed > 0 ? `\n⚠️ *Failed Users (first 10):*\n${result.failedUsers.map((u, i) => `${i+1}. ${u.userId}: ${u.error}`).join('\n')}` : ''}
+
+Thank you for using our advanced broadcast system! 🚀
+                `;
+                
+                await bot.sendMessage(adminData.telegramId, reportMessage, { parse_mode: 'Markdown' });
+            }
+        }
+    } catch (error) {
+        console.error('Error sending report to admin:', error);
+    }
+}
+
+/**
+ * টেস্ট ব্রডকাস্ট ফাংশন - অ্যাডমিন নিজেকে টেস্ট মেসেজ পাঠাতে পারবে
+ */
+exports.testAdvancedBroadcast = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
+    }
+
+    const adminDoc = await db.collection('admins').doc(context.auth.uid).get();
+    if (!adminDoc.exists || !adminDoc.data().isAdmin) {
+        throw new functions.https.HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    const adminData = adminDoc.data();
+    if (!adminData.telegramId) {
+        throw new functions.https.HttpsError('failed-precondition', 'Admin Telegram ID not found.');
+    }
+
+    try {
+        await sendAdvancedMessage(adminData.telegramId, data);
+        
+        return {
+            success: true,
+            message: 'Test message sent successfully to your Telegram account!'
+        };
+    } catch (error) {
+        console.error('Test broadcast failed:', error);
+        throw new functions.https.HttpsError('internal', 'Test broadcast failed: ' + error.message);
+    }
+});
+
+/**
+ * ব্রডকাস্ট স্ট্যাটাস চেক করার ফাংশন
+ */
+exports.getBroadcastStatus = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
+    }
+
+    const adminDoc = await db.collection('admins').doc(context.auth.uid).get();
+    if (!adminDoc.exists || !adminDoc.data().isAdmin) {
+        throw new functions.https.HttpsError('permission-denied', 'Admin access required.');
+    }
+
+    const { broadcastId } = data;
+    if (!broadcastId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Broadcast ID is required.');
+    }
+
+    try {
+        const broadcastDoc = await db.collection('broadcastHistory').doc(broadcastId).get();
+        if (!broadcastDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Broadcast not found.');
+        }
+
+        const broadcastData = broadcastDoc.data();
+        
+        // ডেলিভারি স্ট্যাটাস সংগ্রহ
+        const deliverySnapshot = await db.collection('broadcastDeliveryLogs')
+            .where('broadcastId', '==', broadcastId)
+            .get();
+
+        const deliveryStats = {
+            total: deliverySnapshot.size,
+            success: 0,
+            failed: 0
+        };
+
+        deliverySnapshot.forEach(doc => {
+            const log = doc.data();
+            if (log.status === 'success') {
+                deliveryStats.success++;
+            } else if (log.status === 'failed') {
+                deliveryStats.failed++;
+            }
+        });
+
+        return {
+            ...broadcastData,
+            deliveryStats: deliveryStats,
+            id: broadcastDoc.id
+        };
+    } catch (error) {
+        console.error('Error getting broadcast status:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to get broadcast status: ' + error.message);
     }
 });
 
@@ -428,10 +778,9 @@ exports.scheduledUserStats = functions.pubsub.schedule('every 24 hours').onRun(a
 });
 
 // ===================================================================
-// নতুন এবং সংশোধিত: Single Message Sender Function
+// Single Message Sender Function (আপডেটেড)
 // ===================================================================
 exports.sendTelegramMessage = functions.https.onCall(async (data, context) => {
-    // ব্যবহারকারী লগইন করা অ্যাডমিন কিনা তা চেক করা হচ্ছে
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
     }
@@ -451,18 +800,15 @@ exports.sendTelegramMessage = functions.https.onCall(async (data, context) => {
         const finalTelegramId = String(telegramId).replace('tg_', '');
 
         const options = {};
-        let formattedMessage = message; // মেসেজটিকে একটি নতুন ভেরিয়েবলে রাখা হলো
+        let formattedMessage = message;
 
         if (messageType === 'markdown') {
             options.parse_mode = 'Markdown';
         } else if (messageType === 'html') {
             options.parse_mode = 'HTML';
-            // ★★★ মূল সমাধান এই লাইনটিতে ★★★
-            // এই লাইনটি আপনার পাঠানো মেসেজ থেকে সকল <br> ট্যাগকে খুঁজে বের করে সেগুলোকে একটি নতুন লাইনে (\n) পরিণত করে দেবে।
             formattedMessage = message.replace(/<br\s*\/?>/gi, '\n');
         }
 
-        // টেলিগ্রাম বটকে এখন ফরম্যাট করা মেসেজটি পাঠানো হচ্ছে
         await bot.sendMessage(finalTelegramId, formattedMessage, options);
         
         console.log(`সফলভাবে মেসেজ পাঠানো হয়েছে: ${finalTelegramId}`);
@@ -475,8 +821,7 @@ exports.sendTelegramMessage = functions.https.onCall(async (data, context) => {
 });
 
 // ===================================================================
-// ★★★ ফাইনাল এবং প্রফেশনাল: Firebase কাস্টম টোকেন ফাংশন ★★★
-// (পুরনোটা মুছে এটা পেস্ট করুন)
+// Firebase Custom Token Function
 // ===================================================================
 exports.getFirebaseTokenForUser = functions.https.onCall(async (data, context) => {
     if (!data || !data.telegramId) {
@@ -487,40 +832,32 @@ exports.getFirebaseTokenForUser = functions.https.onCall(async (data, context) =
     const uid = `tg_${telegramId}`;
 
     try {
-        // ধাপ ১: ইউজারের অস্তিত্ব চেক করা
-        // getUser ফাংশনটি ব্যবহারকারী না থাকলে error throw করে
         await admin.auth().getUser(uid);
         console.log(`User ${uid} already exists. Generating token.`);
 
     } catch (error) {
-        // যদি ব্যবহারকারী খুঁজে পাওয়া না যায় (auth/user-not-found)
         if (error.code === 'auth/user-not-found') {
             console.log(`User ${uid} not found. Creating new auth user...`);
             try {
-                // ধাপ ২: শুধুমাত্র যদি না থাকে, তাহলেই নতুন ইউজার তৈরি করা
                 await admin.auth().createUser({
                     uid: uid,
                     displayName: `Telegram User ${telegramId}`,
                 });
                 console.log(`Successfully created user: ${uid}`);
             } catch (createError) {
-                // যদি একই সময়ে দুটি অনুরোধ এসে একটি ইউজার তৈরি করে ফেলে
                 if (createError.code === 'auth/uid-already-exists') {
                     console.log(`User ${uid} was created by a parallel request. Continuing.`);
                 } else {
-                    // অন্য কোনো সমস্যা হলে error throw করা
                     console.error('Error creating user:', createError);
                     throw new functions.https.HttpsError('internal', 'Could not create Firebase user.');
                 }
             }
         } else {
-            // অন্য যেকোনো ধরনের error হলে (যেমন নেটওয়ার্ক সমস্যা)
             console.error('Error fetching user:', error);
             throw new functions.https.HttpsError('internal', 'Could not fetch Firebase user.');
         }
     }
 
-    // ধাপ ৩: সবকিছু ঠিক থাকলে, কাস্টম টোকেন তৈরি এবং রিটার্ন করা
     try {
         const customToken = await admin.auth().createCustomToken(uid);
         console.log(`Successfully generated token for: ${uid}`);
@@ -531,13 +868,10 @@ exports.getFirebaseTokenForUser = functions.https.onCall(async (data, context) =
     }
 });
 
-// =========================================================
-// ★★★ অটোমেটিক ডেটা মাইগ্রেশন ফাংশন (রোবট) ★★★
-// (এই সম্পূর্ণ কোডটি আপনার functions/index.js ফাইলের শেষে যোগ করুন)
-// =========================================================
-
+// ===================================================================
+// অটোমেটিক ডেটা মাইগ্রেশন ফাংশন
+// ===================================================================
 exports.migrateUserData = functions.https.onCall(async (data, context) => {
-  // শুধুমাত্র অথেন্টিকেটেড অ্যাডমিন এই ফাংশনটি চালাতে পারবে
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
   }
@@ -555,14 +889,11 @@ exports.migrateUserData = functions.https.onCall(async (data, context) => {
     let errorCount = 0;
     const usersToMigrate = [];
 
-    // Authentication থেকে সব ব্যবহারকারীর তালিকা আনা হচ্ছে
     const listUsersResult = await auth.listUsers(1000);
 
-    // প্রথমে সব ব্যবহারকারীকে চেক করে মাইগ্রেশনের জন্য একটি তালিকা বানানো হচ্ছে
     for (const userRecord of listUsersResult.users) {
       const uid = userRecord.uid;
 
-      // শুধুমাত্র নতুন এবং সঠিক ফরম্যাটের UID গুলো চেক করা হবে
       if (!uid.startsWith("tg_")) {
         const newUserDocRef = firestore.collection("users").doc(uid);
         const newUserDoc = await newUserDocRef.get();
@@ -578,7 +909,6 @@ exports.migrateUserData = functions.https.onCall(async (data, context) => {
 
     console.log(`মাইগ্রেশনের জন্য মোট ${usersToMigrate.length} জন ব্যবহারকারী পাওয়া গেছে।`);
 
-    // এবার তালিকা অনুযায়ী এক এক করে মাইগ্রেশন করা হচ্ছে
     for (const user of usersToMigrate) {
       const { uid, telegramId } = user;
       const oldDocId = `tg_${telegramId}`;
@@ -593,10 +923,7 @@ exports.migrateUserData = functions.https.onCall(async (data, context) => {
           const oldData = oldUserDoc.data();
           const newUserDocRef = firestore.collection("users").doc(uid);
 
-          // পুরনো ডেটা নতুন ডকুমেন্টে আপডেট করা হচ্ছে
           await newUserDocRef.set(oldData, { merge: true });
-
-          // পুরনো ডকুমেন্টটি ডিলেট করে দেওয়া
           await oldUserDocRef.delete();
           
           migratedCount++;
@@ -616,4 +943,34 @@ exports.migrateUserData = functions.https.onCall(async (data, context) => {
     console.error("মাইগ্রেশন প্রক্রিয়ায় একটি বড় ত্রুটি হয়েছে:", error);
     throw new functions.https.HttpsError('internal', "A critical error occurred during migration.");
   }
+});
+
+// ===================================================================
+// ব্রডকাস্ট হিস্ট্রি ক্লিনআপ ফাংশন (প্রতি মাসে পুরনো ডেটা ডিলিট করবে)
+// ===================================================================
+exports.cleanupOldBroadcasts = functions.pubsub.schedule('0 0 1 * *').onRun(async (context) => {
+    try {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+        const oldBroadcastsSnapshot = await db.collection('broadcastHistory')
+            .where('timestamp', '<', threeMonthsAgo)
+            .get();
+
+        let deleteCount = 0;
+        const deletePromises = [];
+
+        oldBroadcastsSnapshot.forEach(doc => {
+            deletePromises.push(doc.ref.delete());
+            deleteCount++;
+        });
+
+        await Promise.all(deletePromises);
+
+        console.log(`Cleaned up ${deleteCount} old broadcast records`);
+        return null;
+    } catch (error) {
+        console.error('Error cleaning up old broadcasts:', error);
+        return null;
+    }
 });
