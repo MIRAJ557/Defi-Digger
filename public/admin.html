@@ -821,25 +821,24 @@
 
                 // ... আপনার আগের dom এলিমেন্টগুলো এখানে থাকবে ...
 
-// Broadcast elements (নতুন আপডেটেড ভার্সন)
+// Broadcast elements (নতুন এবং সঠিক সংস্করণ)
 refreshBroadcastStatsBtn: document.getElementById('refresh-broadcast-stats'),
 broadcastTotalUsers: document.getElementById('broadcast-total-users'),
 broadcastTelegramUsers: document.getElementById('broadcast-telegram-users'),
 lastBroadcast: document.getElementById('last-broadcast'),
 broadcastSuccessRate: document.getElementById('broadcast-success-rate'),
-broadcastMessageTextarea: document.getElementById('broadcast-message'),
 broadcastTypeSelect: document.getElementById('broadcast-type'),
 broadcastPrioritySelect: document.getElementById('broadcast-priority'),
 targetUsersSelect: document.getElementById('target-users'),
 mediaUrlInput: document.getElementById('media-url'),
 mediaCaptionInput: document.getElementById('media-caption'),
-addButtonRowBtn: document.getElementById('add-button-row'),
+broadcastMessageTextarea: document.getElementById('broadcast-message'),
 inlineButtonsContainer: document.getElementById('inline-buttons-container'),
+addButtonRowBtn: document.getElementById('add-button-row'),
 broadcastPreviewBox: document.getElementById('broadcast-preview'),
 previewBroadcastBtn: document.getElementById('preview-broadcast'),
 testBroadcastBtn: document.getElementById('test-broadcast'),
 sendBroadcastBtn: document.getElementById('send-broadcast'),
-// ... বাকি elements একই থাকবে
 broadcastProgressSection: document.getElementById('broadcast-progress'),
 progressText: document.getElementById('progress-text'),
 progressFill: document.getElementById('progress-fill'),
@@ -851,7 +850,6 @@ broadcastStatus: document.getElementById('broadcast-status'),
 cancelBroadcastBtn: document.getElementById('cancel-broadcast'),
 broadcastHistoryTableBody: document.getElementById('broadcast-history-table-body'),
 refreshHistoryBtn: document.getElementById('refresh-history'),
-// ...
                 
                 // Notification
                 notification: document.getElementById('notification'),
@@ -1005,18 +1003,17 @@ if (runMigrationBtn) {
                 // Wallet Management
                 setupWalletManagement();
 
-                 // Broadcast listeners
-                dom.refreshBroadcastStatsBtn.addEventListener('click', loadBroadcastStats);
-                dom.broadcastMessageTextarea.addEventListener('input', updateBroadcastPreview);
-                dom.broadcastTypeSelect.addEventListener('change', handleBroadcastTypeChange);
-                dom.addButtonRowBtn.addEventListener('click', addButtonRow);
-                dom.previewBroadcastBtn.addEventListener('click', previewBroadcastMessage);
-                dom.sendBroadcastBtn.addEventListener('click', sendBroadcastToUsers);
-                dom.testBroadcastBtn.addEventListener('click', handleTestBroadcast);
-                dom.sendBroadcastBtn.addEventListener('click', sendAdvancedBroadcast);
-                dom.refreshHistoryBtn.addEventListener('click', loadBroadcastHistory);
-                dom.cancelBroadcastBtn.addEventListener('click', cancelBroadcast);
+                // Broadcast listeners (সঠিক এবং কনফ্লিক্ট-মুক্ত সংস্করণ)
+dom.refreshBroadcastStatsBtn.addEventListener('click', loadBroadcastStats);
+dom.broadcastTypeSelect.addEventListener('change', handleBroadcastTypeChange);
+dom.addButtonRowBtn.addEventListener('click', addButtonRow);
+dom.previewBroadcastBtn.addEventListener('click', previewBroadcastMessage);
+dom.testBroadcastBtn.addEventListener('click', handleTestBroadcast);
+dom.sendBroadcastBtn.addEventListener('click', sendAdvancedBroadcast); // <-- শুধু সঠিক ফাংশনটি রাখা হয়েছে
+dom.refreshHistoryBtn.addEventListener('click', loadBroadcastHistory);
+dom.cancelBroadcastBtn.addEventListener('click', cancelBroadcast);
             };
+
 
            // ===================================================================
 // Enhanced Broadcast Functions - Updated for Advanced Features
