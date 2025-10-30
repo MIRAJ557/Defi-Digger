@@ -588,12 +588,24 @@ async function sendAdvancedMessage(telegramId, messageData) {
     }
 }
 
+
 /**
- * ব্রডকাস্ট রেকর্ড তৈরি করা
+ * ব্রডকাস্ট রেকর্ড তৈরি করা (সঠিক সংস্করণ)
  */
 async function createBroadcastRecord(broadcastData) {
+    // Firestore-এর জন্য বাটন ডেটা ফরম্যাট করা হচ্ছে
+    const firestoreSafeButtons = [];
+    if (broadcastData.inlineButtons && broadcastData.inlineButtons.length > 0) {
+        broadcastData.inlineButtons.forEach(row => {
+            row.forEach(button => {
+                firestoreSafeButtons.push(button);
+            });
+        });
+    }
+
     const broadcastRef = await db.collection('broadcastHistory').add({
         ...broadcastData,
+        inlineButtons: firestoreSafeButtons, // <-- মূল পরিবর্তন এখানে
         total: 0,
         success: 0,
         failed: 0,

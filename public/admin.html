@@ -1088,53 +1088,62 @@ const handleBroadcastTypeChange = () => {
     updateBroadcastPreview();
 };
 
+// admin.html ফাইলের <script> ট্যাগের ভেতরে
+
 /**
- * Add a new row of inline buttons
+ * Add a new row of inline buttons (সঠিক সংস্করণ)
  */
 const addButtonRow = () => {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'button-row mb-2 p-2 border rounded';
+    // নিচের HTML থেকে সব oninput এবং onchange ফাংশন কল মুছে ফেলা হয়েছে
     rowDiv.innerHTML = `
         <div class="d-flex gap-2 align-items-center">
-            <input type="text" class="form-control form-control-sm" placeholder="Button Text" oninput="updateBroadcastPreview()">
-            <select class="form-select form-select-sm" onchange="updateBroadcastPreview()">
+            <input type="text" class="form-control form-control-sm button-text" placeholder="Button Text">
+            <select class="form-select form-select-sm button-action">
                 <option value="url">🌐 URL</option>
                 <option value="web_app">📱 Web App</option>
                 <option value="callback">⌨️ Callback</option>
             </select>
-            <input type="text" class="form-control form-control-sm" placeholder="URL or Callback Data" oninput="updateBroadcastPreview()">
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.parentElement.remove(); updateBroadcastPreview()">
+            <input type="text" class="form-control form-control-sm button-value" placeholder="URL or Callback Data">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-button-row">
                 <i class="fas fa-times"></i>
             </button>
         </div>
     `;
     dom.inlineButtonsContainer.appendChild(rowDiv);
+
+    // প্রিভিউ আপডেট করার জন্য ইভেন্ট লিসেনারগুলো এখানে যোগ করা হচ্ছে
+    rowDiv.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('input', updateBroadcastPreview);
+    });
+
+    rowDiv.querySelector('.remove-button-row').addEventListener('click', (e) => {
+        e.currentTarget.closest('.button-row').remove();
+        updateBroadcastPreview();
+    });
 };
 
 /**
- * Get broadcast data from form
+ * Get broadcast data from form (সঠিক সংস্করণ)
  */
 const getBroadcastData = () => {
     const messageType = dom.broadcastTypeSelect.value;
     
-    // Collect inline buttons data
     const buttons = [];
-    const buttonRows = dom.inlineButtonsContainer.querySelectorAll('.button-row');
-    
-    buttonRows.forEach(row => {
-        const inputs = row.querySelectorAll('input, select');
-        const text = inputs[0].value.trim();
-        const action = inputs[1].value;
-        const value = inputs[2].value.trim();
+    document.querySelectorAll('#inline-buttons-container .button-row').forEach(row => {
+        const text = row.querySelector('.button-text').value.trim();
+        const action = row.querySelector('.button-action').value;
+        const value = row.querySelector('.button-value').value.trim();
         
         if (text && value) {
             const button = { text };
             if (action === 'url') button.url = value;
-            else if (action === 'web_app') button.web_app = value;
+            else if (action === 'web_app') button.web_app = { url: value };
             else if (action === 'callback') button.callback_data = value;
             
-            if (buttons.length === 0) buttons.push([]);
-            buttons[0].push(button);
+            // একটি রো-তে একটি বাটন রাখা হচ্ছে (টেলিগ্রামের জন্য ভালো)
+            buttons.push([button]);
         }
     });
     
