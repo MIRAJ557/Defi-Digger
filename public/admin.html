@@ -1091,12 +1091,13 @@ const handleBroadcastTypeChange = () => {
 // admin.html ফাইলের <script> ট্যাগের ভেতরে
 
 /**
- * Add a new row of inline buttons (সঠিক সংস্করণ)
+ * Add a new row of inline buttons (ফাইনাল এবং সঠিক সংস্করণ)
  */
 const addButtonRow = () => {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'button-row mb-2 p-2 border rounded';
-    // নিচের HTML থেকে সব oninput এবং onchange ফাংশন কল মুছে ফেলা হয়েছে
+    
+    // HTML থেকে সব oninput/onchange ফাংশন কল মুছে ফেলা হয়েছে
     rowDiv.innerHTML = `
         <div class="d-flex gap-2 align-items-center">
             <input type="text" class="form-control form-control-sm button-text" placeholder="Button Text">
@@ -1113,15 +1114,19 @@ const addButtonRow = () => {
     `;
     dom.inlineButtonsContainer.appendChild(rowDiv);
 
-    // প্রিভিউ আপডেট করার জন্য ইভেন্ট লিসেনারগুলো এখানে যোগ করা হচ্ছে
+    // প্রিভিউ আপডেট করার জন্য এখানেই ইভেন্ট লিসেনার যোগ করা হচ্ছে
     rowDiv.querySelectorAll('input, select').forEach(el => {
         el.addEventListener('input', updateBroadcastPreview);
     });
 
+    // রিমুভ বাটনের জন্য ইভেন্ট লিসেনার
     rowDiv.querySelector('.remove-button-row').addEventListener('click', (e) => {
         e.currentTarget.closest('.button-row').remove();
         updateBroadcastPreview();
     });
+
+    // নতুন বাটন যোগ করার সাথে সাথে প্রিভিউ আপডেট করা
+    updateBroadcastPreview();
 };
 
 /**
@@ -2005,42 +2010,46 @@ const displayUsers = () => {
                 }
             };
 
-            // Load deposits
-            const loadDeposits = async () => {
+            // Load deposits (ফাইনাল এবং সঠিক সংস্করণ)
+const loadDeposits = async () => {
+    try {
+        const depositsSnapshot = await db.collection('deposits').orderBy('createdAt', 'desc').get();
+        const deposits = [];
+        
+        depositsSnapshot.forEach(doc => {
+            deposits.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        // Get user details for each deposit
+        for (let deposit of deposits) {
+            // ★★★ মূল সমাধান এই লাইনটিতে ★★★
+            // এখানে চেক করা হচ্ছে যে userId আছে কিনা
+            if (deposit.userId) { 
                 try {
-                    const depositsSnapshot = await db.collection('deposits').orderBy('createdAt', 'desc').get();
-                    const deposits = [];
-                    
-                    depositsSnapshot.forEach(doc => {
-                        deposits.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    // Get user details for each deposit
-                    for (let deposit of deposits) {
-                        try {
-                            const userDoc = await db.collection('users').doc(deposit.userId).get();
-                            if (userDoc.exists) {
-                                const userData = userDoc.data();
-                                deposit.telegramId = userData.telegramId || 'N/A';
-                                deposit.telegramUsername = userData.telegramUsername || 'N/A';
-                                deposit.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'N/A';
-                            }
-                        } catch (error) {
-                            console.error('Error fetching user data for deposit:', error);
-                        }
+                    const userDoc = await db.collection('users').doc(deposit.userId).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        deposit.telegramId = userData.telegramId || 'N/A';
+                        deposit.telegramUsername = userData.telegramUsername || 'N/A';
+                        deposit.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'N/A';
                     }
-                    
-                    filteredDeposits = deposits;
-                    displayDeposits();
-                    generatePagination(deposits.length, currentDepositsPage, 'deposits');
                 } catch (error) {
-                    console.error('Error loading deposits:', error);
-                    showNotification('Error loading deposits', 'error');
+                    console.error('Error fetching user data for deposit:', error);
                 }
-            };
+            }
+        }
+        
+        filteredDeposits = deposits;
+        displayDeposits();
+        generatePagination(deposits.length, currentDepositsPage, 'deposits');
+    } catch (error) {
+        console.error('Error loading deposits:', error);
+        showNotification('Error loading deposits', 'error');
+    }
+};
 
             // Display deposits in table
             const displayDeposits = () => {
