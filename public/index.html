@@ -234,6 +234,115 @@
             margin-top: 5px;
         }
 
+        /* Launch Countdown Styles */
+.launch-countdown {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    animation: glow-pulse 2s infinite ease-in-out;
+}
+
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.6); }
+    100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+}
+
+.launch-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.launch-header i {
+    font-size: 20px;
+}
+
+.launch-date {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+.countdown-timer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.countdown-item {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 15px 10px;
+    border: 1px solid var(--glass-border);
+}
+
+.countdown-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--accent);
+    margin-bottom: 5px;
+    text-shadow: 0 0 10px var(--token-glow);
+}
+
+.countdown-label {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.launch-progress {
+    margin-top: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--accent), var(--accent-light));
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .countdown-timer {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    
+    .countdown-value {
+        font-size: 20px;
+    }
+    
+    .launch-countdown {
+        padding: 15px;
+    }
+}
+
         /* Balance Cards */
         .balance-cards {
             display: grid;
@@ -1099,6 +1208,38 @@
             <div id="ton-connect-button-container">
                 <div id="ton-connect-button"></div>
             </div>
+            <!-- Launch Countdown Section -->
+<div class="launch-countdown" id="launch-countdown">
+    <div class="launch-header">
+        <i class="fas fa-rocket"></i>
+        <span>CS Token Launch</span>
+    </div>
+    <div class="launch-date">Token Listing on 22 Dec 2025</div>
+    <div class="countdown-timer">
+        <div class="countdown-item">
+            <div class="countdown-value" id="days">00</div>
+            <div class="countdown-label">Days</div>
+        </div>
+        <div class="countdown-item">
+            <div class="countdown-value" id="hours">00</div>
+            <div class="countdown-label">Hours</div>
+        </div>
+        <div class="countdown-item">
+            <div class="countdown-value" id="minutes">00</div>
+            <div class="countdown-label">Minutes</div>
+        </div>
+        <div class="countdown-item">
+            <div class="countdown-value" id="seconds">00</div>
+            <div class="countdown-label">Seconds</div>
+        </div>
+    </div>
+    <div class="launch-progress">
+        <div class="progress-bar">
+            <div class="progress-fill" id="launch-progress"></div>
+        </div>
+        <div class="progress-text">Launch Progress</div>
+    </div>
+</div>
         </header>
 
         <div class="balance-cards">
@@ -2081,6 +2222,56 @@ const auth = firebase.auth();
         };
 
         // =============================================
+// Launch Countdown Functionality
+// =============================================
+const initializeLaunchCountdown = () => {
+    const launchDate = new Date('December 22, 2025 00:00:00').getTime();
+    
+    const updateCountdown = () => {
+        const now = new Date().getTime();
+        const distance = launchDate - now;
+        
+        // If launch date has passed
+        if (distance < 0) {
+            document.getElementById('launch-countdown').innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 24px; color: var(--accent); margin-bottom: 10px;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div style="font-weight: bold; margin-bottom: 5px;">CS Token Launched!</div>
+                    <div style="font-size: 14px; opacity: 0.8;">Token is now live and trading</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Time calculations
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Update display
+        document.getElementById('days').textContent = days.toString().padStart(2, '0');
+        document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+        document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+        
+        // Update progress bar (assuming 365 days countdown from Jan 1, 2025)
+        const totalDays = 365; // From Jan 1 to Dec 22, 2025
+        const daysPassed = totalDays - days;
+        const progress = Math.min((daysPassed / totalDays) * 100, 100);
+        document.getElementById('launch-progress').style.width = `${progress}%`;
+    };
+    
+    // Initial update
+    updateCountdown();
+    
+    // Update every second
+    setInterval(updateCountdown, 1000);
+};
+
+        // =============================================
         // Navigation and UI Management
         // =============================================
         const switchTab = (tabId) => {
@@ -2245,6 +2436,7 @@ const auth = firebase.auth();
             }
             
             initializePackages();
+            initializeLaunchCountdown(); // ← এই লাইনটি যোগ করুন
             loadPackages();
             updateUI();
             setupTabScrolling();
@@ -2277,6 +2469,7 @@ const auth = firebase.auth();
             updateLoadingProgress(100, 'Basic mode');
             
             initializePackages();
+            initializeLaunchCountdown(); // ← এই লাইনটি যোগ করুন
             updateUI();
             setupTabScrolling();
             setupEventListeners();
